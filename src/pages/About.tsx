@@ -8,48 +8,43 @@ interface TeamMemberProps {
   role: string;
   image: string;
   bio: string;
+  quote?: string;
 }
 
-const TeamMember: React.FC<TeamMemberProps> = ({ name, role, image, bio }) => {
+const TeamMember: React.FC<TeamMemberProps> = ({ name, role, image, bio, quote }) => {
   return (
-    <div className="flex flex-col items-center text-center p-6">
+    <div className="flex flex-col items-center text-center p-6 bg-white rounded-2xl shadow-md">
       <Avatar className="w-32 h-32 mb-4 border-4 border-white shadow-lg">
         <img src={image} alt={name} className="object-cover" />
       </Avatar>
-      <h3 className="text-xl font-semibold mb-1">{name}</h3>
+      <h3 className="text-xl font-semibold mb-1 text-[#222222]">{name}</h3>
       <p className="text-accent-purple font-medium mb-3">{role}</p>
-      <p className="text-gray-600">{bio}</p>
+      <p className="text-[#555555] mb-4">{bio}</p>
+      {quote && (
+        <div className="mt-4 p-4 bg-soft-purple rounded-lg italic">
+          <p className="text-[#555555]">"{quote}"</p>
+        </div>
+      )}
     </div>
   );
 };
 
 const About: React.FC = () => {
-  const teamMembers = [
-    {
-      name: "Sarah Johnson",
-      role: "Founder & CEO",
-      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=634&q=80",
-      bio: "Sarah has 10+ years of experience in digital marketing and AI development. She founded ShopBoost AI to help small businesses thrive in the digital space."
-    },
-    {
-      name: "Michael Chen",
-      role: "CTO",
-      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=crop&w=634&q=80",
-      bio: "Michael leads our engineering team, bringing expertise in AI and machine learning to develop powerful yet intuitive tools for our users."
-    },
-    {
-      name: "Priya Sharma",
-      role: "Head of Marketing",
-      image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?ixlib=rb-1.2.1&auto=format&fit=crop&w=634&q=80",
-      bio: "Priya's innovative marketing strategies have helped thousands of businesses improve their social media presence using ShopBoost AI."
-    },
-    {
-      name: "David Wilson",
-      role: "Head of Product",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=634&q=80",
-      bio: "David ensures our product meets the highest standards of usability and effectiveness for businesses of all sizes."
-    }
-  ];
+  const founder = {
+    name: "Dinesh Penjuru",
+    role: "Founder & Visionary",
+    image: "/lovable-uploads/7f2f2f11-8dbd-4f45-a17b-10244965070b.png",
+    bio: "With a passion for empowering local businesses through technology, Dinesh founded this initiative to bridge the digital divide for small-scale shops. His vision is rooted in innovation, inclusivity, and impact.",
+    quote: "I believe the smallest stores can have the loudest digital voice. We're here to make that happen."
+  };
+
+  const developer = {
+    name: "Rishi Kesava",
+    role: "Frontend & Backend Developer",
+    image: "/lovable-uploads/6754a2b3-b208-4b4f-a8ec-3149f69b0301.png",
+    bio: "Rishi transforms bold ideas into seamless digital experiences. From crafting intuitive user interfaces to architecting rock-solid backend systems, he brings our vision to life — one line of code at a time.",
+    quote: "Good design is invisible, but powerful code makes it shine. That's where I come in."
+  };
 
   return (
     <PageLayout>
@@ -90,22 +85,31 @@ const About: React.FC = () => {
         </div>
 
         <div className="mb-16 text-center animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          <h2 className="text-3xl font-bold mb-2">Meet Our Team</h2>
-          <p className="text-lg max-w-2xl mx-auto mb-12">
-            The passionate experts behind ShopBoost AI working to help your business succeed.
+          <h2 className="text-3xl font-bold mb-6">The Team Behind ShopBoost AI</h2>
+          <p className="text-lg max-w-3xl mx-auto mb-12">
+            Together, we're not just building a platform — we're building a movement. Welcome to a smarter, 
+            AI-powered future for local shops. 🚀
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {teamMembers.map((member, index) => (
-              <div key={index} className="animate-fade-in" style={{ animationDelay: `${0.3 + index * 0.1}s` }}>
-                <TeamMember 
-                  name={member.name} 
-                  role={member.role}
-                  image={member.image}
-                  bio={member.bio}
-                />
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="animate-fade-in" style={{ animationDelay: "0.3s" }}>
+              <TeamMember 
+                name={founder.name} 
+                role={founder.role}
+                image={founder.image}
+                bio={founder.bio}
+                quote={founder.quote}
+              />
+            </div>
+            <div className="animate-fade-in" style={{ animationDelay: "0.4s" }}>
+              <TeamMember 
+                name={developer.name} 
+                role={developer.role}
+                image={developer.image}
+                bio={developer.bio}
+                quote={developer.quote}
+              />
+            </div>
           </div>
         </div>
       </div>
