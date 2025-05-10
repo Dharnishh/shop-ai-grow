@@ -45,6 +45,11 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* New text color variables */
+    --text-header: 240 10% 3.9%;
+    --text-description: 240 3.8% 46.1%;
+    --text-error: 0 84.2% 60.2%;
   }
 }
 
@@ -55,6 +60,18 @@
 
   body {
     @apply bg-background text-foreground font-sans;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-[#222222] font-medium;
+  }
+  
+  p, span, div {
+    @apply text-[#555555];
+  }
+  
+  .error-message {
+    @apply text-[#ea384c] text-sm font-medium;
   }
 
   .card-hover {

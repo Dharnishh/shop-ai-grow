@@ -3,6 +3,16 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
+import { cn } from "@/lib/utils";
 
 const NavBar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -29,12 +39,60 @@ const NavBar: React.FC = () => {
 
       {/* Desktop menu */}
       <div className="hidden md:flex items-center space-x-6">
-        <Link to="/#features" className="text-gray-600 hover:text-accent-purple transition-colors">
-          Features
-        </Link>
-        <Link to="/#about" className="text-gray-600 hover:text-accent-purple transition-colors">
-          About Us
-        </Link>
+        <NavigationMenu>
+          <NavigationMenuList>
+            <NavigationMenuItem>
+              <Link to="/features" className="text-gray-600 hover:text-accent-purple transition-colors">
+                Features
+              </Link>
+            </NavigationMenuItem>
+            
+            <NavigationMenuItem>
+              <NavigationMenuTrigger className="text-gray-600 hover:text-accent-purple">
+                Solutions
+              </NavigationMenuTrigger>
+              <NavigationMenuContent>
+                <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-2">
+                  <ListItem to="/ai-tools" title="AI Content Tools">
+                    Generate captions, find hashtags, and create engaging content
+                  </ListItem>
+                  <ListItem to="/competitor-analysis" title="Competitor Analysis">
+                    Track and analyze your competitors' performance
+                  </ListItem>
+                  <ListItem to="/features" title="Post Scheduling">
+                    Schedule and automate your social media posting
+                  </ListItem>
+                  <ListItem to="/features" title="Analytics Dashboard">
+                    Track your growth and engagement metrics
+                  </ListItem>
+                </ul>
+              </NavigationMenuContent>
+            </NavigationMenuItem>
+
+            <NavigationMenuItem>
+              <NavigationMenuTrigger className="text-gray-600 hover:text-accent-purple">
+                Company
+              </NavigationMenuTrigger>
+              <NavigationMenuContent>
+                <ul className="grid gap-3 p-6 md:w-[400px]">
+                  <ListItem to="/about" title="About Us">
+                    Learn about our mission and team
+                  </ListItem>
+                  <ListItem to="/contact" title="Contact Us">
+                    Get in touch with our support team
+                  </ListItem>
+                  <ListItem to="/terms" title="Terms of Service">
+                    Read our terms and conditions
+                  </ListItem>
+                  <ListItem to="/privacy" title="Privacy Policy">
+                    Understand how we protect your data
+                  </ListItem>
+                </ul>
+              </NavigationMenuContent>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
+
         <Link to="/login">
           <Button variant="outline" className="rounded-full button-hover">
             Login
@@ -50,11 +108,20 @@ const NavBar: React.FC = () => {
       {/* Mobile menu */}
       {isMenuOpen && (
         <div className="md:hidden absolute top-16 left-0 right-0 bg-white shadow-md p-5 flex flex-col space-y-4 animate-fade-in">
-          <Link to="/#features" className="text-gray-600 hover:text-accent-purple transition-colors" onClick={toggleMenu}>
+          <Link to="/features" className="text-gray-600 hover:text-accent-purple transition-colors" onClick={toggleMenu}>
             Features
           </Link>
-          <Link to="/#about" className="text-gray-600 hover:text-accent-purple transition-colors" onClick={toggleMenu}>
+          <Link to="/ai-tools" className="text-gray-600 hover:text-accent-purple transition-colors" onClick={toggleMenu}>
+            AI Tools
+          </Link>
+          <Link to="/competitor-analysis" className="text-gray-600 hover:text-accent-purple transition-colors" onClick={toggleMenu}>
+            Competitor Analysis
+          </Link>
+          <Link to="/about" className="text-gray-600 hover:text-accent-purple transition-colors" onClick={toggleMenu}>
             About Us
+          </Link>
+          <Link to="/contact" className="text-gray-600 hover:text-accent-purple transition-colors" onClick={toggleMenu}>
+            Contact
           </Link>
           <Link to="/login" onClick={toggleMenu}>
             <Button variant="outline" className="w-full rounded-full">
@@ -71,5 +138,32 @@ const NavBar: React.FC = () => {
     </nav>
   );
 };
+
+const ListItem = React.forwardRef<
+  React.ElementRef<"a">,
+  React.ComponentPropsWithoutRef<"a"> & { to: string }
+>(({ className, title, children, to, ...props }, ref) => {
+  return (
+    <li>
+      <NavigationMenuLink asChild>
+        <Link
+          ref={ref}
+          to={to}
+          className={cn(
+            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+            className
+          )}
+          {...props}
+        >
+          <div className="text-sm font-medium leading-none">{title}</div>
+          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+            {children}
+          </p>
+        </Link>
+      </NavigationMenuLink>
+    </li>
+  );
+});
+ListItem.displayName = "ListItem";
 
 export default NavBar;
