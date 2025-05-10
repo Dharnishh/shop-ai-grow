@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import AuthLayout from "@/components/AuthLayout";
-import { Google } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 const Login: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
@@ -76,7 +76,7 @@ const Login: React.FC = () => {
           variant="outline" 
           className="w-full rounded-lg button-hover"
         >
-          <Google className="mr-2 h-4 w-4" />
+          <ExternalLink className="mr-2 h-4 w-4" />
           Google
         </Button>
       </form>
