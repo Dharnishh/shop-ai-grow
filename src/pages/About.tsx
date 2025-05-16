@@ -33,7 +33,7 @@ const About: React.FC = () => {
   const founder = {
     name: "Dinesh Penjuru",
     role: "Founder & Visionary",
-    image: "/lovable-uploads/7f2f2f11-8dbd-4f45-a17b-10244965070b.png",
+    image: "/lovable-uploads/b87f9f22-bea0-4603-897e-40e39a67ecbe.png",
     bio: "With a passion for empowering local businesses through technology, Dinesh founded this initiative to bridge the digital divide for small-scale shops. His vision is rooted in innovation, inclusivity, and impact.",
     quote: "I believe the smallest stores can have the loudest digital voice. We're here to make that happen."
   };
