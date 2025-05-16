@@ -30,7 +30,7 @@ const AboutSection: React.FC = () => {
             <div className="flex flex-col items-center animate-fade-in" style={{animationDelay: '200ms'}}>
               <div className="w-40 h-40 rounded-full overflow-hidden mb-4 border-4 border-white shadow-lg">
                 <img 
-                  src="/lovable-uploads/7f2f2f11-8dbd-4f45-a17b-10244965070b.png" 
+                  src="/lovable-uploads/dinesh.png" 
                   alt="Founder" 
                   className="w-full h-full object-cover"
                 />
@@ -42,7 +42,7 @@ const AboutSection: React.FC = () => {
             <div className="flex flex-col items-center animate-fade-in" style={{animationDelay: '400ms'}}>
               <div className="w-40 h-40 rounded-full overflow-hidden mb-4 border-4 border-white shadow-lg">
                 <img 
-                  src="/lovable-uploads/5d6b2156-70f6-4714-bc4c-8db2ff9d57b8.png" 
+                  src="/lovable-uploads/rishith.png" 
                   alt="Developer" 
                   className="w-full h-full object-cover"
                 />
