@@ -9,12 +9,25 @@ import {
   Video, 
   MessageCircle,
   BarChart, 
-  Plus, 
   ArrowRight,
-  BarChart2
+  ArrowUp
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 
 const Dashboard: React.FC = () => {
+  // Sample data for the analytics chart
+  const analyticsData = [
+    { name: "Mon", posts: 4, engagement: 12 },
+    { name: "Tue", posts: 3, engagement: 8 },
+    { name: "Wed", posts: 5, engagement: 18 },
+    { name: "Thu", posts: 2, engagement: 6 },
+    { name: "Fri", posts: 6, engagement: 23 },
+    { name: "Sat", posts: 3, engagement: 9 },
+    { name: "Sun", posts: 2, engagement: 7 },
+  ];
+
   const moduleCards = [
     {
       title: "Auto Schedule Posts",
@@ -74,7 +87,7 @@ const Dashboard: React.FC = () => {
             <div className="flex justify-between items-center">
               <span className="text-3xl font-bold">28</span>
               <div className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">
-                +14% 
+                +14% <ArrowUp className="inline h-3 w-3 ml-1" />
               </div>
             </div>
           </CardContent>
@@ -88,7 +101,7 @@ const Dashboard: React.FC = () => {
             <div className="flex justify-between items-center">
               <span className="text-3xl font-bold">4.2%</span>
               <div className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">
-                +0.8% 
+                +0.8% <ArrowUp className="inline h-3 w-3 ml-1" />
               </div>
             </div>
           </CardContent>
@@ -102,7 +115,7 @@ const Dashboard: React.FC = () => {
             <div className="flex justify-between items-center">
               <span className="text-3xl font-bold">84</span>
               <div className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">
-                +12%
+                +12% <ArrowUp className="inline h-3 w-3 ml-1" />
               </div>
             </div>
           </CardContent>
@@ -113,11 +126,17 @@ const Dashboard: React.FC = () => {
         <h3 className="text-lg font-semibold mb-4">Analytics Overview</h3>
         <Card>
           <CardContent className="pt-6">
-            <div className="h-64 flex items-center justify-center">
-              <div className="flex flex-col items-center text-gray-400">
-                <BarChart2 size={48} />
-                <p className="mt-2">Analytics chart placeholder</p>
-              </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsBarChart data={analyticsData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="posts" fill="#8884d8" name="Posts" />
+                  <Bar dataKey="engagement" fill="#82ca9d" name="Engagement" />
+                </RechartsBarChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
@@ -134,8 +153,10 @@ const Dashboard: React.FC = () => {
                 </div>
                 <h4 className="font-semibold mb-2">{card.title}</h4>
                 <p className="text-gray-600 text-sm mb-4">{card.description}</p>
-                <Button variant="ghost" className="text-accent-purple p-0 hover:bg-transparent hover:text-accent-purple-hover">
-                  Access <ArrowRight className="ml-2 h-4 w-4" />
+                <Button variant="ghost" className="text-accent-purple p-0 hover:bg-transparent hover:text-accent-purple-hover" asChild>
+                  <Link to={card.href}>
+                    Access <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
