@@ -33,7 +33,7 @@ const About: React.FC = () => {
   const founder = {
     name: "Dinesh Penjuru",
     role: "Founder & Visionary",
-    image: "/lovable-uploads/dinesh.png",
+    image: "/lovable-uploads/7f2f2f11-8dbd-4f45-a17b-10244965070b.png",
     bio: "With a passion for empowering local businesses through technology, Dinesh founded this initiative to bridge the digital divide for small-scale shops. His vision is rooted in innovation, inclusivity, and impact.",
     quote: "I believe the smallest stores can have the loudest digital voice. We're here to make that happen."
   };
@@ -41,7 +41,7 @@ const About: React.FC = () => {
   const developer = {
     name: "Rishi Kesava",
     role: "Frontend & Backend Developer",
-    image: "/lovable-uploads/rishith.png",
+    image: "/lovable-uploads/5d6b2156-70f6-4714-bc4c-8db2ff9d57b8.png",
     bio: "Rishi transforms bold ideas into seamless digital experiences. From crafting intuitive user interfaces to architecting rock-solid backend systems, he brings our vision to life — one line of code at a time.",
     quote: "Good design is invisible, but powerful code makes it shine. That's where I come in."
   };
