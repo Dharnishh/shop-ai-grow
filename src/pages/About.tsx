@@ -41,7 +41,7 @@ const About: React.FC = () => {
   const developer = {
     name: "Rishi Kesava",
     role: "Frontend & Backend Developer",
-    image: "/lovable-uploads/5d6b2156-70f6-4714-bc4c-8db2ff9d57b8.png",
+    image: "/lovable-uploads/6754a2b3-b208-4b4f-a8ec-3149f69b0301.png",
     bio: "Rishi transforms bold ideas into seamless digital experiences. From crafting intuitive user interfaces to architecting rock-solid backend systems, he brings our vision to life — one line of code at a time.",
     quote: "Good design is invisible, but powerful code makes it shine. That's where I come in."
   };
