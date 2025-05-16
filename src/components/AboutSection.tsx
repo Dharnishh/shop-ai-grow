@@ -30,25 +30,25 @@ const AboutSection: React.FC = () => {
             <div className="flex flex-col items-center animate-fade-in" style={{animationDelay: '200ms'}}>
               <div className="w-40 h-40 rounded-full overflow-hidden mb-4 border-4 border-white shadow-lg">
                 <img 
-                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a" 
+                  src="/lovable-uploads/7f2f2f11-8dbd-4f45-a17b-10244965070b.png" 
                   alt="Founder" 
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h4 className="text-lg font-semibold mb-1">Alex Johnson</h4>
-              <p className="text-gray-600 text-sm text-center">Founder & CEO</p>
+              <h4 className="text-lg font-semibold mb-1">Dinesh Penjuru</h4>
+              <p className="text-gray-600 text-sm text-center">Founder & Visionary</p>
             </div>
             
             <div className="flex flex-col items-center animate-fade-in" style={{animationDelay: '400ms'}}>
               <div className="w-40 h-40 rounded-full overflow-hidden mb-4 border-4 border-white shadow-lg">
                 <img 
-                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2" 
-                  alt="Co-Founder" 
+                  src="/lovable-uploads/b87f9f22-bea0-4603-897e-40e39a67ecbe.png" 
+                  alt="Developer" 
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h4 className="text-lg font-semibold mb-1">Sarah Chen</h4>
-              <p className="text-gray-600 text-sm text-center">Co-Founder & CTO</p>
+              <h4 className="text-lg font-semibold mb-1">Rishi Kesava</h4>
+              <p className="text-gray-600 text-sm text-center">Frontend & Backend Developer</p>
             </div>
           </div>
         </div>
