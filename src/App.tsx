@@ -17,11 +17,12 @@ import AITools from "./pages/AITools";
 import CompetitorAnalysis from "./pages/CompetitorAnalysis";
 import NotFound from "./pages/NotFound";
 
-// Import new dashboard module pages
+// Import dashboard module pages
 import Schedule from "./pages/Dashboard/Schedule";
 import PhotoEditing from "./pages/Dashboard/PhotoEditing";
 import VideoEditing from "./pages/Dashboard/VideoEditing";
 import DashboardAITools from "./pages/Dashboard/AITools";
+import ManageAccounts from "./pages/Dashboard/ManageAccounts";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
           <Route path="/dashboard/photo-editing" element={<PhotoEditing />} />
           <Route path="/dashboard/video-editing" element={<VideoEditing />} />
           <Route path="/dashboard/competitor-analysis" element={<CompetitorAnalysis />} />
+          <Route path="/dashboard/manage-accounts" element={<ManageAccounts />} />
           <Route path="/features" element={<Features />} />
           <Route path="/about" element={<About />} />
           <Route path="/terms" element={<TermsOfService />} />

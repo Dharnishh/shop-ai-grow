@@ -3,8 +3,8 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Facebook, Instagram, MessageSquare } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { Facebook, Instagram, MessageSquare, WhatsApp } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const SocialMediaIntegration: React.FC = () => {
@@ -13,6 +13,7 @@ const SocialMediaIntegration: React.FC = () => {
   const [instagramHandle, setInstagramHandle] = useState("");
   const [facebookPageId, setFacebookPageId] = useState("");
   const [message, setMessage] = useState("Hello! I'm interested in your services.");
+  const [whatsappBusiness, setWhatsappBusiness] = useState(false);
 
   const handleWhatsAppChat = () => {
     if (!whatsappNumber) {
@@ -26,7 +27,12 @@ const SocialMediaIntegration: React.FC = () => {
     
     // Format the number (remove spaces, +, etc)
     const formattedNumber = whatsappNumber.replace(/\s+/g, "").replace(/\+/g, "");
-    const whatsappUrl = `https://wa.me/${formattedNumber}?text=${encodeURIComponent(message)}`;
+    
+    // Use the WhatsApp Business API URL if selected, otherwise use the regular WhatsApp URL
+    const whatsappUrl = whatsappBusiness 
+      ? `https://api.whatsapp.com/send?phone=${formattedNumber}&text=${encodeURIComponent(message)}`
+      : `https://wa.me/${formattedNumber}?text=${encodeURIComponent(message)}`;
+    
     window.open(whatsappUrl, "_blank");
     
     toast({
@@ -105,12 +111,36 @@ const SocialMediaIntegration: React.FC = () => {
                 onChange={(e) => setMessage(e.target.value)}
               />
             </div>
+            
+            <div className="flex items-center space-x-2 mb-4">
+              <input
+                type="checkbox"
+                id="whatsappBusiness"
+                checked={whatsappBusiness}
+                onChange={(e) => setWhatsappBusiness(e.target.checked)}
+                className="rounded border-gray-300 text-green-600"
+              />
+              <label htmlFor="whatsappBusiness" className="text-sm font-medium">
+                Use WhatsApp Business API
+              </label>
+            </div>
+            
             <Button 
               onClick={handleWhatsAppChat}
               className="w-full bg-green-500 hover:bg-green-600"
             >
-              <MessageSquare className="mr-2 h-4 w-4" /> Start WhatsApp Chat
+              <WhatsApp className="mr-2 h-4 w-4" /> Start WhatsApp Chat
             </Button>
+            
+            <div className="mt-4 bg-gray-50 p-4 rounded-md border border-gray-200">
+              <h4 className="font-medium text-sm mb-2">WhatsApp Integration Options:</h4>
+              <ul className="list-disc pl-5 text-sm space-y-1 text-gray-600">
+                <li>Direct chat link (current): No API key needed, opens chat in WhatsApp app</li>
+                <li>WhatsApp Business API: Requires business account and approval from Meta</li>
+                <li>WhatsApp Cloud API: Allows automated messages through Meta's API</li>
+                <li>Multi-agent inbox: Requires third-party service integration</li>
+              </ul>
+            </div>
           </TabsContent>
           
           <TabsContent value="instagram" className="space-y-4">
