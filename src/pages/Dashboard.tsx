@@ -13,8 +13,8 @@ import {
   ArrowUp
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
+import SocialMediaIntegration from "@/components/SocialMediaIntegration";
 
 const Dashboard: React.FC = () => {
   // Sample data for the analytics chart
@@ -140,6 +140,11 @@ const Dashboard: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
+      
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold mb-4">Social Media Connections</h3>
+        <SocialMediaIntegration />
       </div>
       
       <div>
