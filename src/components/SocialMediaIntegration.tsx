@@ -1,9 +1,8 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Facebook, Instagram, MessageSquare, WhatsApp } from "lucide-react";
+import { Facebook, Instagram, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -129,7 +128,7 @@ const SocialMediaIntegration: React.FC = () => {
               onClick={handleWhatsAppChat}
               className="w-full bg-green-500 hover:bg-green-600"
             >
-              <WhatsApp className="mr-2 h-4 w-4" /> Start WhatsApp Chat
+              <MessageSquare className="mr-2 h-4 w-4" /> Start WhatsApp Chat
             </Button>
             
             <div className="mt-4 bg-gray-50 p-4 rounded-md border border-gray-200">

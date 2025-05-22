@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, WhatsappLogo } from "lucide-react";
+import { Plus, Edit, Trash2, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface Account {
