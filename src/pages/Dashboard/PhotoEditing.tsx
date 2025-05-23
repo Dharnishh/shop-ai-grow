@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -34,6 +35,13 @@ const PhotoEditing: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [customTemplate, setCustomTemplate] = useState<Template | null>(null);
   const [editingMode, setEditingMode] = useState(false);
+  
+  // New state for customization
+  const [brightness, setBrightness] = useState<number>(50);
+  const [contrast, setContrast] = useState<number>(50);
+  const [saturation, setSaturation] = useState<number>(50);
+  const [temperature, setTemperature] = useState<number>(50);
+  const [addedText, setAddedText] = useState<string | null>(null);
   
   // Template categories
   const categories = ["All", "Social Media", "Business", "Personal", "Promotional"];
@@ -135,6 +143,11 @@ const PhotoEditing: React.FC = () => {
       setSelectedImage(URL.createObjectURL(e.target.files[0]));
       setSelectedFilter(null); // Reset filter when new image is uploaded
       setEditingMode(true);
+      
+      toast({
+        title: "Image Uploaded",
+        description: "Your image is ready for editing"
+      });
     }
   };
   
@@ -191,6 +204,62 @@ const PhotoEditing: React.FC = () => {
         description: "Your image has been successfully exported"
       });
     }, 1500);
+  };
+
+  const handleBrightnessChange = (value: number[]) => {
+    setBrightness(value[0]);
+    toast({
+      title: "Brightness Adjusted",
+      description: `Brightness set to ${value[0]}%`
+    });
+  };
+
+  const handleContrastChange = (value: number[]) => {
+    setContrast(value[0]);
+    toast({
+      title: "Contrast Adjusted",
+      description: `Contrast set to ${value[0]}%`
+    });
+  };
+
+  const handleSaturationChange = (value: number[]) => {
+    setSaturation(value[0]);
+    toast({
+      title: "Saturation Adjusted",
+      description: `Saturation set to ${value[0]}%`
+    });
+  };
+
+  const handleTemperatureChange = (value: number[]) => {
+    setTemperature(value[0]);
+    toast({
+      title: "Temperature Adjusted",
+      description: `Temperature set to ${value[0]}%`
+    });
+  };
+  
+  const handleAddHeading = () => {
+    setAddedText("Sample Heading");
+    toast({
+      title: "Text Added",
+      description: "Heading text added to your image"
+    });
+  };
+
+  const handleAddSubheading = () => {
+    setAddedText("Sample Subheading");
+    toast({
+      title: "Text Added",
+      description: "Subheading text added to your image"
+    });
+  };
+
+  const handleAddBodyText = () => {
+    setAddedText("Sample body text");
+    toast({
+      title: "Text Added",
+      description: "Body text added to your image"
+    });
   };
 
   return (
@@ -457,7 +526,7 @@ const PhotoEditing: React.FC = () => {
                   {customTemplate && (
                     <div className="flex items-center text-sm">
                       <span className="text-gray-500 mr-2">Template:</span>
-                      <Badge variant="outline">{customTemplate.title}</Badge>
+                      <Badge variant="accent">{customTemplate.title}</Badge>
                       <Button variant="ghost" size="icon" onClick={handleCreateCopy}>
                         <Copy className="h-4 w-4" />
                       </Button>
@@ -472,7 +541,17 @@ const PhotoEditing: React.FC = () => {
                           src={selectedImage} 
                           alt="Editing preview" 
                           className={`max-h-full max-w-full object-contain ${selectedFilter ? filters.find(f => f.id === selectedFilter)?.class : ""}`}
+                          style={{
+                            filter: `brightness(${brightness/50}) contrast(${contrast/50}) saturate(${saturation/50})`
+                          }}
                         />
+                        
+                        {/* Added text overlay */}
+                        {addedText && (
+                          <div className="absolute top-1/4 left-0 right-0 text-center">
+                            <h2 className="bg-white bg-opacity-75 text-black text-2xl font-bold px-4 py-2 inline-block">{addedText}</h2>
+                          </div>
+                        )}
                       </div>
                       <div className="flex justify-between items-center mt-4">
                         <div className="flex space-x-2">
@@ -562,7 +641,7 @@ const PhotoEditing: React.FC = () => {
                         {filters.map(filter => (
                           <div 
                             key={filter.id}
-                            className={`cursor-pointer p-1 border rounded-md text-center ${selectedFilter === filter.id ? 'border-accent-purple bg-accent-purple bg-opacity-10' : ''}`}
+                            className={`cursor-pointer p-1 border rounded-md text-center ${selectedFilter === filter.id ? 'border-purple-600 bg-purple-50' : ''}`}
                             onClick={() => setSelectedFilter(filter.id)}
                           >
                             <div className="h-14 bg-gray-200 rounded mb-1 overflow-hidden">
@@ -586,62 +665,92 @@ const PhotoEditing: React.FC = () => {
                       <div>
                         <div className="flex justify-between mb-2">
                           <label className="text-sm">Brightness</label>
-                          <span className="text-xs">0</span>
+                          <span className="text-xs">{brightness}</span>
                         </div>
-                        <Slider defaultValue={[50]} max={100} step={1} />
+                        <Slider 
+                          value={[brightness]} 
+                          max={100} 
+                          step={1} 
+                          onValueChange={handleBrightnessChange}
+                        />
                       </div>
                       
                       <div>
                         <div className="flex justify-between mb-2">
                           <label className="text-sm">Contrast</label>
-                          <span className="text-xs">0</span>
+                          <span className="text-xs">{contrast}</span>
                         </div>
-                        <Slider defaultValue={[50]} max={100} step={1} />
+                        <Slider 
+                          value={[contrast]} 
+                          max={100} 
+                          step={1} 
+                          onValueChange={handleContrastChange}
+                        />
                       </div>
                       
                       <div>
                         <div className="flex justify-between mb-2">
                           <label className="text-sm">Saturation</label>
-                          <span className="text-xs">0</span>
+                          <span className="text-xs">{saturation}</span>
                         </div>
-                        <Slider defaultValue={[50]} max={100} step={1} />
+                        <Slider 
+                          value={[saturation]} 
+                          max={100} 
+                          step={1} 
+                          onValueChange={handleSaturationChange}
+                        />
                       </div>
                       
                       <div>
                         <div className="flex justify-between mb-2">
                           <label className="text-sm">Temperature</label>
-                          <span className="text-xs">0</span>
+                          <span className="text-xs">{temperature}</span>
                         </div>
-                        <Slider defaultValue={[50]} max={100} step={1} />
+                        <Slider 
+                          value={[temperature]} 
+                          max={100} 
+                          step={1} 
+                          onValueChange={handleTemperatureChange}
+                        />
                       </div>
                     </TabsContent>
                     
                     <TabsContent value="text" className="pt-4">
                       <div className="space-y-2">
-                        <Button variant="outline" className="w-full justify-start">
+                        <Button variant="outline" className="w-full justify-start" onClick={handleAddHeading}>
                           <span>Add heading</span>
                         </Button>
-                        <Button variant="outline" className="w-full justify-start">
+                        <Button variant="outline" className="w-full justify-start" onClick={handleAddSubheading}>
                           <span>Add subheading</span>
                         </Button>
-                        <Button variant="outline" className="w-full justify-start">
+                        <Button variant="outline" className="w-full justify-start" onClick={handleAddBodyText}>
                           <span>Add body text</span>
                         </Button>
                       </div>
                       
+                      {addedText && (
+                        <div className="mt-4 space-y-2">
+                          <label className="text-sm font-medium">Edit Text</label>
+                          <Input 
+                            value={addedText} 
+                            onChange={(e) => setAddedText(e.target.value)} 
+                          />
+                        </div>
+                      )}
+                      
                       <div className="mt-4">
                         <h4 className="text-sm font-medium mb-2">Text styles</h4>
                         <div className="grid grid-cols-2 gap-2">
-                          <div className="p-2 border rounded-md text-center">
+                          <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
                             <p className="text-sm font-bold">Bold</p>
                           </div>
-                          <div className="p-2 border rounded-md text-center">
+                          <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
                             <p className="text-sm italic">Italic</p>
                           </div>
-                          <div className="p-2 border rounded-md text-center">
+                          <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
                             <p className="text-sm underline">Underline</p>
                           </div>
-                          <div className="p-2 border rounded-md text-center">
+                          <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
                             <p className="text-sm uppercase">Uppercase</p>
                           </div>
                         </div>
@@ -692,7 +801,7 @@ const PhotoEditing: React.FC = () => {
                       <Save className="h-4 w-4 mr-2" />
                       Save Template
                     </Button>
-                    <Button disabled={!selectedImage} onClick={handleExport} className="bg-accent-purple hover:bg-accent-purple-hover">
+                    <Button disabled={!selectedImage} onClick={handleExport} className="bg-purple-600 hover:bg-purple-700 text-white">
                       <Download className="h-4 w-4 mr-2" />
                       Export
                     </Button>

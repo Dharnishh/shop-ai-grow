@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -32,10 +33,20 @@ const VideoEditing: React.FC = () => {
   const [customTemplate, setCustomTemplate] = useState<Template | null>(null);
   const [editingMode, setEditingMode] = useState(false);
   const [selectedTabInEditor, setSelectedTabInEditor] = useState<string>("trim");
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
   
   // Template categories
   const categories = ["All", "Business", "Story", "Promo", "Social Media"];
   const [activeCategory, setActiveCategory] = useState("All");
+  
+  // State for customizations
+  const [textTitle, setTextTitle] = useState<string>("");
+  const [musicVolume, setMusicVolume] = useState<number>(50);
+  const [voiceVolume, setVoiceVolume] = useState<number>(80);
+  const [selectedEffect, setSelectedEffect] = useState<string | null>(null);
+  const [selectedTransition, setSelectedTransition] = useState<string | null>(null);
+  const [trimStart, setTrimStart] = useState<number>(0);
+  const [trimEnd, setTrimEnd] = useState<number>(100);
   
   // Sample templates with descriptions and more options
   const templates: Template[] = [
@@ -143,9 +154,12 @@ const VideoEditing: React.FC = () => {
       setCustomTemplate(template);
       setEditingMode(true);
       
+      // Set a sample video preview based on the template
+      setVideoPreview(template.thumbnail);
+      
       toast({
         title: "Template Loaded",
-        description: "You can now customize this template",
+        description: "You can now customize this template in the editor",
       });
     }
   };
@@ -177,6 +191,61 @@ const VideoEditing: React.FC = () => {
         description: "Your video has been successfully exported",
       });
     }, 2000);
+  };
+
+  const handleAddTitle = () => {
+    setTextTitle("New Title");
+    toast({
+      title: "Title Added",
+      description: "You can now edit the title text",
+    });
+  };
+
+  const handleMusicVolumeChange = (value: number[]) => {
+    setMusicVolume(value[0]);
+    toast({
+      title: "Music Volume Updated",
+      description: `Music volume set to ${value[0]}%`,
+    });
+  };
+
+  const handleVoiceVolumeChange = (value: number[]) => {
+    setVoiceVolume(value[0]);
+    toast({
+      title: "Voice Volume Updated",
+      description: `Voice volume set to ${value[0]}%`,
+    });
+  };
+
+  const handleTrimStartChange = (value: number[]) => {
+    setTrimStart(value[0]);
+    toast({
+      title: "Trim Start Updated",
+      description: `Trim start set to ${value[0]}%`,
+    });
+  };
+
+  const handleTrimEndChange = (value: number[]) => {
+    setTrimEnd(value[0]);
+    toast({
+      title: "Trim End Updated",
+      description: `Trim end set to ${value[0]}%`,
+    });
+  };
+
+  const handleSelectTransition = (transition: string) => {
+    setSelectedTransition(transition);
+    toast({
+      title: "Transition Applied",
+      description: `${transition} transition has been applied`,
+    });
+  };
+
+  const handleSelectFilter = () => {
+    toast({
+      title: "Filter Applied",
+      description: "The selected filter has been applied to your video",
+    });
   };
   
   return (
@@ -429,7 +498,7 @@ const VideoEditing: React.FC = () => {
                   {customTemplate && (
                     <div className="flex items-center text-sm">
                       <span className="text-gray-500 mr-2">Template:</span>
-                      <Badge variant="outline">{customTemplate.title}</Badge>
+                      <Badge variant="accent">{customTemplate.title}</Badge>
                       <Button variant="ghost" size="icon" onClick={handleCreateCopy}>
                         <Copy className="h-4 w-4" />
                       </Button>
@@ -437,8 +506,21 @@ const VideoEditing: React.FC = () => {
                   )}
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col">
-                  <div className="flex-grow bg-black rounded-md flex items-center justify-center">
-                    <Video className="h-16 w-16 text-white opacity-20" />
+                  <div className="flex-grow bg-black rounded-md flex items-center justify-center relative">
+                    {videoPreview ? (
+                      <img 
+                        src={videoPreview} 
+                        alt="Video preview" 
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    ) : (
+                      <Video className="h-16 w-16 text-white opacity-20" />
+                    )}
+                    {textTitle && (
+                      <div className="absolute bottom-4 left-0 right-0 text-center">
+                        <h2 className="text-white text-xl font-bold bg-black bg-opacity-50 inline-block px-4 py-2">{textTitle}</h2>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center justify-between mt-4">
                     <div className="flex space-x-2">
@@ -508,17 +590,27 @@ const VideoEditing: React.FC = () => {
                       <div>
                         <div className="flex justify-between mb-2">
                           <label className="text-sm">Start Time</label>
-                          <span className="text-xs">00:00</span>
+                          <span className="text-xs">{trimStart}%</span>
                         </div>
-                        <Slider defaultValue={[0]} max={100} step={1} />
+                        <Slider 
+                          value={[trimStart]} 
+                          max={100} 
+                          step={1} 
+                          onValueChange={handleTrimStartChange} 
+                        />
                       </div>
                       
                       <div>
                         <div className="flex justify-between mb-2">
                           <label className="text-sm">End Time</label>
-                          <span className="text-xs">00:35</span>
+                          <span className="text-xs">{trimEnd}%</span>
                         </div>
-                        <Slider defaultValue={[100]} max={100} step={1} />
+                        <Slider 
+                          value={[trimEnd]} 
+                          max={100} 
+                          step={1} 
+                          onValueChange={handleTrimEndChange} 
+                        />
                       </div>
                       
                       <div>
@@ -531,7 +623,7 @@ const VideoEditing: React.FC = () => {
                     
                     <TabsContent value="text" className="pt-4">
                       <div className="space-y-3">
-                        <Button variant="outline" className="w-full justify-start">
+                        <Button variant="outline" className="w-full justify-start" onClick={handleAddTitle}>
                           <span>Add title</span>
                         </Button>
                         <Button variant="outline" className="w-full justify-start">
@@ -542,19 +634,29 @@ const VideoEditing: React.FC = () => {
                         </Button>
                       </div>
                       
+                      {textTitle && (
+                        <div className="mt-4 space-y-2">
+                          <label className="text-sm font-medium">Edit Title</label>
+                          <Input 
+                            value={textTitle} 
+                            onChange={(e) => setTextTitle(e.target.value)} 
+                          />
+                        </div>
+                      )}
+                      
                       <div className="mt-4">
                         <h4 className="text-sm font-medium mb-2">Text animations</h4>
                         <div className="grid grid-cols-2 gap-2">
-                          <div className="p-2 border rounded-md text-center">
+                          <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
                             <p className="text-sm">Fade In</p>
                           </div>
-                          <div className="p-2 border rounded-md text-center">
+                          <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
                             <p className="text-sm">Slide Up</p>
                           </div>
-                          <div className="p-2 border rounded-md text-center">
+                          <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
                             <p className="text-sm">Pop</p>
                           </div>
-                          <div className="p-2 border rounded-md text-center">
+                          <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
                             <p className="text-sm">Bounce</p>
                           </div>
                         </div>
@@ -565,35 +667,45 @@ const VideoEditing: React.FC = () => {
                       <div>
                         <div className="flex justify-between mb-2">
                           <label className="text-sm">Music Volume</label>
-                          <span className="text-xs">50%</span>
+                          <span className="text-xs">{musicVolume}%</span>
                         </div>
-                        <Slider defaultValue={[50]} max={100} step={1} />
+                        <Slider 
+                          value={[musicVolume]} 
+                          max={100} 
+                          step={1} 
+                          onValueChange={handleMusicVolumeChange} 
+                        />
                       </div>
                       
                       <div>
                         <div className="flex justify-between mb-2">
                           <label className="text-sm">Voice Volume</label>
-                          <span className="text-xs">80%</span>
+                          <span className="text-xs">{voiceVolume}%</span>
                         </div>
-                        <Slider defaultValue={[80]} max={100} step={1} />
+                        <Slider 
+                          value={[voiceVolume]} 
+                          max={100} 
+                          step={1} 
+                          onValueChange={handleVoiceVolumeChange} 
+                        />
                       </div>
                       
                       <div>
                         <h4 className="text-sm font-medium mb-2">Background Music</h4>
                         <div className="space-y-2">
-                          <div className="p-2 border rounded-md flex items-center">
+                          <div className="p-2 border rounded-md flex items-center cursor-pointer hover:bg-gray-100">
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
                               <Music className="h-4 w-4 text-gray-500" />
                             </div>
                             <span className="text-sm">Upbeat Pop</span>
                           </div>
-                          <div className="p-2 border rounded-md flex items-center">
+                          <div className="p-2 border rounded-md flex items-center cursor-pointer hover:bg-gray-100">
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
                               <Music className="h-4 w-4 text-gray-500" />
                             </div>
                             <span className="text-sm">Corporate</span>
                           </div>
-                          <div className="p-2 border rounded-md flex items-center">
+                          <div className="p-2 border rounded-md flex items-center cursor-pointer hover:bg-gray-100">
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
                               <Music className="h-4 w-4 text-gray-500" />
                             </div>
@@ -607,16 +719,28 @@ const VideoEditing: React.FC = () => {
                       <div>
                         <h4 className="text-sm font-medium mb-2">Transitions</h4>
                         <div className="grid grid-cols-2 gap-2">
-                          <div className="p-2 border rounded-md text-center">
+                          <div 
+                            className={`p-2 border rounded-md text-center cursor-pointer ${selectedTransition === 'Fade' ? 'bg-purple-100 border-purple-300' : 'hover:bg-gray-100'}`}
+                            onClick={() => handleSelectTransition('Fade')}
+                          >
                             <p className="text-sm">Fade</p>
                           </div>
-                          <div className="p-2 border rounded-md text-center">
+                          <div 
+                            className={`p-2 border rounded-md text-center cursor-pointer ${selectedTransition === 'Dissolve' ? 'bg-purple-100 border-purple-300' : 'hover:bg-gray-100'}`}
+                            onClick={() => handleSelectTransition('Dissolve')}
+                          >
                             <p className="text-sm">Dissolve</p>
                           </div>
-                          <div className="p-2 border rounded-md text-center">
+                          <div 
+                            className={`p-2 border rounded-md text-center cursor-pointer ${selectedTransition === 'Slide' ? 'bg-purple-100 border-purple-300' : 'hover:bg-gray-100'}`}
+                            onClick={() => handleSelectTransition('Slide')}
+                          >
                             <p className="text-sm">Slide</p>
                           </div>
-                          <div className="p-2 border rounded-md text-center">
+                          <div 
+                            className={`p-2 border rounded-md text-center cursor-pointer ${selectedTransition === 'Wipe' ? 'bg-purple-100 border-purple-300' : 'hover:bg-gray-100'}`}
+                            onClick={() => handleSelectTransition('Wipe')}
+                          >
                             <p className="text-sm">Wipe</p>
                           </div>
                         </div>
@@ -625,12 +749,12 @@ const VideoEditing: React.FC = () => {
                       <div className="mt-4">
                         <h4 className="text-sm font-medium mb-2">Filters</h4>
                         <div className="grid grid-cols-3 gap-2">
-                          <div className="aspect-square bg-gray-200 rounded-md"></div>
-                          <div className="aspect-square bg-gray-300 rounded-md"></div>
-                          <div className="aspect-square bg-gray-400 rounded-md"></div>
-                          <div className="aspect-square bg-gray-500 rounded-md"></div>
-                          <div className="aspect-square bg-gray-600 rounded-md"></div>
-                          <div className="aspect-square bg-gray-700 rounded-md"></div>
+                          <div className="aspect-square bg-gray-200 rounded-md cursor-pointer" onClick={handleSelectFilter}></div>
+                          <div className="aspect-square bg-gray-300 rounded-md cursor-pointer" onClick={handleSelectFilter}></div>
+                          <div className="aspect-square bg-gray-400 rounded-md cursor-pointer" onClick={handleSelectFilter}></div>
+                          <div className="aspect-square bg-gray-500 rounded-md cursor-pointer" onClick={handleSelectFilter}></div>
+                          <div className="aspect-square bg-gray-600 rounded-md cursor-pointer" onClick={handleSelectFilter}></div>
+                          <div className="aspect-square bg-gray-700 rounded-md cursor-pointer" onClick={handleSelectFilter}></div>
                         </div>
                       </div>
                     </TabsContent>
@@ -641,7 +765,7 @@ const VideoEditing: React.FC = () => {
                       <Save className="h-4 w-4 mr-2" />
                       Save Template
                     </Button>
-                    <Button onClick={handleExport}>
+                    <Button onClick={handleExport} className="bg-purple-600 hover:bg-purple-700 text-white">
                       <Download className="h-4 w-4 mr-2" />
                       Export Video
                     </Button>

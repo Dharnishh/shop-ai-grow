@@ -52,7 +52,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
           <div className="p-3">
             <div className="flex items-center justify-between">
               <h3 className="font-medium text-sm">{template.title}</h3>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="accent" className="text-xs">
                 {template.category}
               </Badge>
             </div>
