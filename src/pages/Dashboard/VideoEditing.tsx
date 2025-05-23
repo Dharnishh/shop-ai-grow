@@ -1,7 +1,6 @@
-
 import React, { useState } from "react";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Video, 
@@ -13,27 +12,104 @@ import {
   Save, 
   PlaySquare,
   Plus,
-  Search
+  Search,
+  Download,
+  Settings,
+  Copy
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import TemplateGallery, { Template } from "@/components/Dashboard/TemplateGallery";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const VideoEditing: React.FC = () => {
+  const { toast } = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [customTemplate, setCustomTemplate] = useState<Template | null>(null);
+  const [editingMode, setEditingMode] = useState(false);
+  const [selectedTabInEditor, setSelectedTabInEditor] = useState<string>("trim");
   
   // Template categories
   const categories = ["All", "Business", "Story", "Promo", "Social Media"];
   const [activeCategory, setActiveCategory] = useState("All");
   
-  // Sample templates
-  const templates = [
-    { id: "1", title: "Product Showcase", category: "Business", thumbnail: "https://images.unsplash.com/photo-1516876437184-593fda40c8ce?w=500&h=280&auto=format&fit=crop" },
-    { id: "2", title: "Fashion Sale", category: "Promo", thumbnail: "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500&h=280&auto=format&fit=crop" },
-    { id: "3", title: "Instagram Story", category: "Story", thumbnail: "https://images.unsplash.com/photo-1512499617640-c74ae3a79d37?w=500&h=280&auto=format&fit=crop" },
-    { id: "4", title: "Restaurant Menu", category: "Business", thumbnail: "https://images.unsplash.com/photo-1495195134817-aeb325a55b65?w=500&h=280&auto=format&fit=crop" },
-    { id: "5", title: "Summer Collection", category: "Social Media", thumbnail: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&h=280&auto=format&fit=crop" },
-    { id: "6", title: "Service Overview", category: "Business", thumbnail: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&h=280&auto=format&fit=crop" },
+  // Sample templates with descriptions and more options
+  const templates: Template[] = [
+    { 
+      id: "1", 
+      title: "Product Showcase", 
+      category: "Business", 
+      thumbnail: "https://images.unsplash.com/photo-1516876437184-593fda40c8ce?w=500&h=280&auto=format&fit=crop",
+      dimensions: "1080p • 16:9",
+      type: "video",
+      description: "Perfect for displaying products with animated transitions"
+    },
+    { 
+      id: "2", 
+      title: "Fashion Sale", 
+      category: "Promo", 
+      thumbnail: "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500&h=280&auto=format&fit=crop",
+      dimensions: "1080p • 9:16",
+      type: "video",
+      description: "Quick promo template with dynamic text animations"
+    },
+    { 
+      id: "3", 
+      title: "Instagram Story", 
+      category: "Story", 
+      thumbnail: "https://images.unsplash.com/photo-1512499617640-c74ae3a79d37?w=500&h=280&auto=format&fit=crop",
+      dimensions: "1080x1920",
+      type: "video",
+      description: "Vertical format perfect for Instagram Stories"
+    },
+    { 
+      id: "4", 
+      title: "Restaurant Menu", 
+      category: "Business", 
+      thumbnail: "https://images.unsplash.com/photo-1495195134817-aeb325a55b65?w=500&h=280&auto=format&fit=crop",
+      dimensions: "1080p • 16:9",
+      type: "video",
+      description: "Showcase restaurant menu items with elegant transitions"
+    },
+    { 
+      id: "5", 
+      title: "Summer Collection", 
+      category: "Social Media", 
+      thumbnail: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&h=280&auto=format&fit=crop",
+      dimensions: "1080x1080",
+      type: "video",
+      description: "Square format video for Instagram feed posts"
+    },
+    { 
+      id: "6", 
+      title: "Service Overview", 
+      category: "Business", 
+      thumbnail: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&h=280&auto=format&fit=crop",
+      dimensions: "1080p • 16:9",
+      type: "video",
+      description: "Professional template to highlight business services"
+    },
+    { 
+      id: "7", 
+      title: "YouTube Tutorial", 
+      category: "Social Media", 
+      thumbnail: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&h=280&auto=format&fit=crop",
+      dimensions: "1080p • 16:9",
+      type: "video",
+      description: "Tutorial-style template with intro and sections"
+    },
+    { 
+      id: "8", 
+      title: "Quick TikTok", 
+      category: "Social Media", 
+      thumbnail: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=500&h=280&auto=format&fit=crop",
+      dimensions: "1080x1920",
+      type: "video",
+      description: "Fast-paced vertical video with trending effects"
+    },
   ];
   
   const filteredTemplates = activeCategory === "All" 
@@ -50,6 +126,58 @@ const VideoEditing: React.FC = () => {
     { id: "6", type: "text", name: "Call to Action", duration: "0:03" },
   ];
   
+  const handleSelectTemplate = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    const template = templates.find(t => t.id === templateId);
+    
+    toast({
+      title: "Template Selected",
+      description: `You selected the ${template?.title} template`,
+    });
+  };
+
+  const handleUseTemplate = () => {
+    const template = templates.find(t => t.id === selectedTemplate);
+    if (template) {
+      setCustomTemplate(template);
+      setEditingMode(true);
+      
+      toast({
+        title: "Template Loaded",
+        description: "You can now customize this template",
+      });
+    }
+  };
+
+  const handleCreateCopy = () => {
+    toast({
+      title: "Template Duplicated",
+      description: "A copy of this template has been created for customization",
+    });
+  };
+
+  const handleSaveTemplate = () => {
+    toast({
+      title: "Template Saved",
+      description: "Your customized template has been saved",
+    });
+  };
+
+  const handleExport = () => {
+    toast({
+      title: "Exporting Video",
+      description: "Your video is being prepared for export",
+    });
+
+    // Simulate export process
+    setTimeout(() => {
+      toast({
+        title: "Export Complete",
+        description: "Your video has been successfully exported",
+      });
+    }, 2000);
+  };
+  
   return (
     <DashboardLayout pageTitle="Video Editing">
       <div className="mb-6">
@@ -57,16 +185,21 @@ const VideoEditing: React.FC = () => {
         <p className="text-gray-600">Create professional videos for your social media and marketing.</p>
       </div>
       
-      <Tabs defaultValue="templates">
+      <Tabs defaultValue={editingMode ? "editor" : "templates"} onValueChange={(value) => {
+        if (value === "templates") {
+          setEditingMode(false);
+        }
+      }}>
         <TabsList className="mb-6">
           <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="editor">Video Editor</TabsTrigger>
+          <TabsTrigger value="editor" disabled={!editingMode && !selectedTemplate}>Video Editor</TabsTrigger>
         </TabsList>
         
         <TabsContent value="templates" className="space-y-6">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle>Choose a Template</CardTitle>
+              <CardDescription>Select a pre-designed template or start from scratch</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between mb-6">
@@ -91,54 +224,96 @@ const VideoEditing: React.FC = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {filteredTemplates.map((template) => (
-                  <div 
-                    key={template.id}
-                    className={`border rounded-md overflow-hidden cursor-pointer hover:shadow-md transition-shadow ${selectedTemplate === template.id ? 'ring-2 ring-accent-purple' : ''}`}
-                    onClick={() => setSelectedTemplate(template.id)}
-                  >
-                    <div className="relative aspect-video">
-                      <img 
-                        src={template.thumbnail} 
-                        alt={template.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                        <PlaySquare className="h-12 w-12 text-white" />
-                      </div>
-                    </div>
-                    <div className="p-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-medium text-sm">{template.title}</h3>
-                        <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                          {template.category}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <TemplateGallery 
+                templates={filteredTemplates}
+                selectedTemplate={selectedTemplate}
+                onSelectTemplate={handleSelectTemplate}
+                type="video"
+              />
               
-              <div className="mt-6 flex justify-center">
+              <div className="mt-6 flex justify-end gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Custom Size
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create Custom Video</DialogTitle>
+                      <DialogDescription>
+                        Set your desired dimensions and format for a custom video project.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Width (px)</label>
+                          <Input type="number" defaultValue={1920} />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Height (px)</label>
+                          <Input type="number" defaultValue={1080} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Preset</label>
+                        <Select defaultValue="16:9">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select aspect ratio" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="16:9">16:9 (Landscape)</SelectItem>
+                            <SelectItem value="9:16">9:16 (Portrait)</SelectItem>
+                            <SelectItem value="1:1">1:1 (Square)</SelectItem>
+                            <SelectItem value="4:5">4:5 (Instagram)</SelectItem>
+                            <SelectItem value="custom">Custom</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Frame Rate</label>
+                        <Select defaultValue="30">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select frame rate" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="24">24 fps (Cinematic)</SelectItem>
+                            <SelectItem value="30">30 fps (Standard)</SelectItem>
+                            <SelectItem value="60">60 fps (Smooth)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline">Cancel</Button>
+                      <Button onClick={() => {
+                        setEditingMode(true);
+                        setCustomTemplate(null);
+                        toast({
+                          title: "Custom Project Created",
+                          description: "You can now start editing your custom video"
+                        });
+                      }}>
+                        Create Project
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                
                 <Button variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Load More
+                  <FileVideo className="h-4 w-4 mr-2" />
+                  Upload Video
+                </Button>
+                
+                <Button disabled={!selectedTemplate} onClick={handleUseTemplate}>
+                  <PlaySquare className="h-4 w-4 mr-2" />
+                  Use Selected Template
                 </Button>
               </div>
             </CardContent>
           </Card>
-          
-          <div className="flex justify-end gap-2">
-            <Button variant="outline">
-              <FileVideo className="h-4 w-4 mr-2" />
-              Start from Scratch
-            </Button>
-            <Button disabled={!selectedTemplate}>
-              <PlaySquare className="h-4 w-4 mr-2" />
-              Use Selected Template
-            </Button>
-          </div>
         </TabsContent>
         
         <TabsContent value="editor" className="space-y-6">
@@ -248,8 +423,17 @@ const VideoEditing: React.FC = () => {
             {/* Main preview area */}
             <div className="lg:col-span-2">
               <Card className="h-full flex flex-col">
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-3 flex flex-row justify-between items-center">
                   <CardTitle>Preview</CardTitle>
+                  {customTemplate && (
+                    <div className="flex items-center text-sm">
+                      <span className="text-gray-500 mr-2">Template:</span>
+                      <Badge variant="outline">{customTemplate.title}</Badge>
+                      <Button variant="ghost" size="icon" onClick={handleCreateCopy}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col">
                   <div className="flex-grow bg-black rounded-md flex items-center justify-center">
@@ -293,7 +477,7 @@ const VideoEditing: React.FC = () => {
                   <CardTitle>Editing Tools</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Tabs defaultValue="trim">
+                  <Tabs defaultValue={selectedTabInEditor} onValueChange={setSelectedTabInEditor}>
                     <TabsList className="grid w-full grid-cols-4">
                       <TabsTrigger value="trim" className="text-xs">
                         <Scissors className="h-4 w-4 mb-1" />
@@ -452,11 +636,12 @@ const VideoEditing: React.FC = () => {
                   </Tabs>
                   
                   <div className="pt-6 flex justify-between">
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={handleSaveTemplate}>
                       <Save className="h-4 w-4 mr-2" />
-                      Save Draft
+                      Save Template
                     </Button>
-                    <Button>
+                    <Button onClick={handleExport}>
+                      <Download className="h-4 w-4 mr-2" />
                       Export Video
                     </Button>
                   </div>
