@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -36,26 +35,27 @@ const PhotoEditing: React.FC = () => {
   const [customTemplate, setCustomTemplate] = useState<Template | null>(null);
   const [editingMode, setEditingMode] = useState(false);
   
-  // New state for customization
-  const [brightness, setBrightness] = useState<number>(50);
-  const [contrast, setContrast] = useState<number>(50);
-  const [saturation, setSaturation] = useState<number>(50);
-  const [temperature, setTemperature] = useState<number>(50);
-  const [addedText, setAddedText] = useState<string | null>(null);
+  // Enhanced state for customization with proper functionality
+  const [brightness, setBrightness] = useState<number>(100);
+  const [contrast, setContrast] = useState<number>(100);
+  const [saturation, setSaturation] = useState<number>(100);
+  const [temperature, setTemperature] = useState<number>(0);
+  const [textElements, setTextElements] = useState<Array<{id: string, text: string, x: number, y: number, fontSize: number, color: string}>>([]);
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
   
   // Template categories
   const categories = ["All", "Social Media", "Business", "Personal", "Promotional"];
   const [activeCategory, setActiveCategory] = useState("All");
 
   const filters = [
-    { id: "original", name: "Original", class: "" },
-    { id: "grayscale", name: "B&W", class: "grayscale" },
-    { id: "sepia", name: "Sepia", class: "sepia" },
-    { id: "saturate", name: "Vibrant", class: "saturate-200" },
-    { id: "contrast", name: "Contrast", class: "contrast-125" },
-    { id: "brightness", name: "Bright", class: "brightness-125" },
-    { id: "blur", name: "Blur", class: "blur-sm" },
-    { id: "hue", name: "Color Shift", class: "hue-rotate-90" }
+    { id: "original", name: "Original", class: "", filterCSS: "" },
+    { id: "grayscale", name: "B&W", class: "grayscale", filterCSS: "grayscale(1)" },
+    { id: "sepia", name: "Sepia", class: "sepia", filterCSS: "sepia(1)" },
+    { id: "saturate", name: "Vibrant", class: "saturate-200", filterCSS: "saturate(2)" },
+    { id: "contrast", name: "Contrast", class: "contrast-125", filterCSS: "contrast(1.25)" },
+    { id: "brightness", name: "Bright", class: "brightness-125", filterCSS: "brightness(1.25)" },
+    { id: "blur", name: "Blur", class: "blur-sm", filterCSS: "blur(2px)" },
+    { id: "hue", name: "Color Shift", class: "hue-rotate-90", filterCSS: "hue-rotate(90deg)" }
   ];
 
   // Photo editing templates
@@ -140,13 +140,22 @@ const PhotoEditing: React.FC = () => {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedImage(URL.createObjectURL(e.target.files[0]));
-      setSelectedFilter(null); // Reset filter when new image is uploaded
+      const file = e.target.files[0];
+      const imageUrl = URL.createObjectURL(file);
+      setSelectedImage(imageUrl);
+      setSelectedFilter("original");
       setEditingMode(true);
       
+      // Reset all adjustments
+      setBrightness(100);
+      setContrast(100);
+      setSaturation(100);
+      setTemperature(0);
+      setTextElements([]);
+      
       toast({
-        title: "Image Uploaded",
-        description: "Your image is ready for editing"
+        title: "Image Uploaded Successfully",
+        description: "Your image is ready for editing. Use the tools on the right to customize it."
       });
     }
   };
@@ -167,12 +176,18 @@ const PhotoEditing: React.FC = () => {
       setCustomTemplate(template);
       setEditingMode(true);
       
-      // In a real app, this would load a sample image for the template
-      setSelectedImage("https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=500&h=500&auto=format&fit=crop");
+      // Load template with sample image
+      setSelectedImage(template.thumbnail);
+      setSelectedFilter("original");
+      setBrightness(100);
+      setContrast(100);
+      setSaturation(100);
+      setTemperature(0);
+      setTextElements([]);
       
       toast({
-        title: "Template Loaded",
-        description: "You can now customize this template"
+        title: "Template Loaded Successfully",
+        description: "Template loaded! You can now customize it with your own content."
       });
     }
   };
@@ -185,15 +200,33 @@ const PhotoEditing: React.FC = () => {
   };
   
   const handleSaveTemplate = () => {
+    if (!selectedImage) {
+      toast({
+        title: "No Image to Save",
+        description: "Please upload an image or select a template first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     toast({
-      title: "Template Saved",
-      description: "Your customized template has been saved"
+      title: "Template Saved Successfully",
+      description: "Your customized template has been saved to your library"
     });
   };
   
   const handleExport = () => {
+    if (!selectedImage) {
+      toast({
+        title: "No Image to Export",
+        description: "Please upload an image or select a template first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     toast({
-      title: "Exporting Image",
+      title: "Exporting Image...",
       description: "Your image is being prepared for download"
     });
     
@@ -201,7 +234,7 @@ const PhotoEditing: React.FC = () => {
     setTimeout(() => {
       toast({
         title: "Export Complete",
-        description: "Your image has been successfully exported"
+        description: "Your customized image has been successfully exported!"
       });
     }, 1500);
   };
@@ -234,39 +267,69 @@ const PhotoEditing: React.FC = () => {
     setTemperature(value[0]);
     toast({
       title: "Temperature Adjusted",
-      description: `Temperature set to ${value[0]}%`
+      description: `Color temperature set to ${value[0]}%`
     });
   };
   
-  const handleAddHeading = () => {
-    setAddedText("Sample Heading");
+  const handleAddText = (textType: string) => {
+    const newText = {
+      id: Date.now().toString(),
+      text: textType === "heading" ? "New Heading" : textType === "subheading" ? "New Subheading" : "New Text",
+      x: 50,
+      y: textType === "heading" ? 20 : textType === "subheading" ? 40 : 60,
+      fontSize: textType === "heading" ? 32 : textType === "subheading" ? 24 : 16,
+      color: "#ffffff"
+    };
+    
+    setTextElements([...textElements, newText]);
+    setSelectedElement(newText.id);
+    
     toast({
       title: "Text Added",
-      description: "Heading text added to your image"
+      description: `${textType.charAt(0).toUpperCase() + textType.slice(1)} text added to your image. Click on it to edit.`
     });
   };
 
-  const handleAddSubheading = () => {
-    setAddedText("Sample Subheading");
+  const handleFilterSelect = (filterId: string) => {
+    setSelectedFilter(filterId);
+    const filter = filters.find(f => f.id === filterId);
+    
     toast({
-      title: "Text Added",
-      description: "Subheading text added to your image"
+      title: "Filter Applied",
+      description: `${filter?.name} filter applied to your image`
     });
   };
 
-  const handleAddBodyText = () => {
-    setAddedText("Sample body text");
+  const updateTextElement = (id: string, updates: Partial<typeof textElements[0]>) => {
+    setTextElements(prev => 
+      prev.map(element => 
+        element.id === id ? { ...element, ...updates } : element
+      )
+    );
+  };
+
+  const removeTextElement = (id: string) => {
+    setTextElements(prev => prev.filter(element => element.id !== id));
+    setSelectedElement(null);
     toast({
-      title: "Text Added",
-      description: "Body text added to your image"
+      title: "Text Removed",
+      description: "Text element has been removed from your image"
     });
+  };
+
+  // Generate CSS filter string
+  const getImageFilters = () => {
+    const selectedFilterObj = filters.find(f => f.id === selectedFilter);
+    const baseFilter = selectedFilterObj?.filterCSS || "";
+    const adjustmentFilters = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${temperature}deg)`;
+    return baseFilter ? `${baseFilter} ${adjustmentFilters}` : adjustmentFilters;
   };
 
   return (
     <DashboardLayout pageTitle="Photo Editing">
       <div className="mb-6">
         <h2 className="text-2xl font-semibold">Photo Editing Studio</h2>
-        <p className="text-gray-600">Create stunning visuals for your social media posts.</p>
+        <p className="text-gray-600">Create stunning visuals for your social media posts with full customization.</p>
       </div>
       
       <Tabs defaultValue={editingMode ? "editor" : "templates"} onValueChange={(value) => {
@@ -413,7 +476,7 @@ const PhotoEditing: React.FC = () => {
         
         <TabsContent value="editor" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Left sidebar with templates */}
+            {/* Left sidebar with design elements */}
             <div className="lg:col-span-1">
               <Card>
                 <CardHeader className="pb-3">
@@ -492,16 +555,28 @@ const PhotoEditing: React.FC = () => {
                     
                     <TabsContent value="text" className="pt-4">
                       <div className="space-y-2">
-                        <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
+                        <div 
+                          className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleAddText("heading")}
+                        >
                           <p className="text-lg font-bold">Add heading</p>
                         </div>
-                        <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
+                        <div 
+                          className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleAddText("subheading")}
+                        >
                           <p className="text-md">Add subheading</p>
                         </div>
-                        <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
+                        <div 
+                          className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleAddText("body")}
+                        >
                           <p className="text-sm">Add body text</p>
                         </div>
-                        <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
+                        <div 
+                          className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleAddText("caption")}
+                        >
                           <p className="text-sm italic">Add caption</p>
                         </div>
                       </div>
@@ -518,7 +593,7 @@ const PhotoEditing: React.FC = () => {
               </Card>
             </div>
             
-            {/* Main editing area */}
+            {/* Main editing area with functional preview */}
             <div className="lg:col-span-2">
               <Card className="h-full flex flex-col">
                 <CardHeader className="pb-3 flex flex-row justify-between items-center">
@@ -537,21 +612,36 @@ const PhotoEditing: React.FC = () => {
                   {selectedImage ? (
                     <>
                       <div className="flex-grow relative bg-[#f0f0f0] rounded-md flex items-center justify-center overflow-hidden">
-                        <img 
-                          src={selectedImage} 
-                          alt="Editing preview" 
-                          className={`max-h-full max-w-full object-contain ${selectedFilter ? filters.find(f => f.id === selectedFilter)?.class : ""}`}
-                          style={{
-                            filter: `brightness(${brightness/50}) contrast(${contrast/50}) saturate(${saturation/50})`
-                          }}
-                        />
-                        
-                        {/* Added text overlay */}
-                        {addedText && (
-                          <div className="absolute top-1/4 left-0 right-0 text-center">
-                            <h2 className="bg-white bg-opacity-75 text-black text-2xl font-bold px-4 py-2 inline-block">{addedText}</h2>
-                          </div>
-                        )}
+                        <div className="relative">
+                          <img 
+                            src={selectedImage} 
+                            alt="Editing preview" 
+                            className="max-h-full max-w-full object-contain"
+                            style={{
+                              filter: getImageFilters()
+                            }}
+                          />
+                          
+                          {/* Functional text overlays */}
+                          {textElements.map((textElement) => (
+                            <div
+                              key={textElement.id}
+                              className={`absolute cursor-pointer ${selectedElement === textElement.id ? 'ring-2 ring-blue-500' : ''}`}
+                              style={{
+                                left: `${textElement.x}%`,
+                                top: `${textElement.y}%`,
+                                fontSize: `${textElement.fontSize}px`,
+                                color: textElement.color,
+                                fontWeight: textElement.fontSize > 24 ? 'bold' : 'normal',
+                                textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+                                transform: 'translate(-50%, -50%)'
+                              }}
+                              onClick={() => setSelectedElement(textElement.id)}
+                            >
+                              {textElement.text}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                       <div className="flex justify-between items-center mt-4">
                         <div className="flex space-x-2">
@@ -565,7 +655,21 @@ const PhotoEditing: React.FC = () => {
                           </Button>
                         </div>
                         <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" className="text-red-500">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-500"
+                            onClick={() => {
+                              setSelectedImage(null);
+                              setTextElements([]);
+                              setSelectedElement(null);
+                              setEditingMode(false);
+                              toast({
+                                title: "Image Removed",
+                                description: "Image has been removed from the editor"
+                              });
+                            }}
+                          >
                             <Trash className="h-4 w-4 mr-1" />
                             <span>Delete</span>
                           </Button>
@@ -592,10 +696,10 @@ const PhotoEditing: React.FC = () => {
                         Upload an image to start editing or select a template from the gallery.
                       </p>
                       <Button>
-                        <label htmlFor="upload" className="cursor-pointer">
+                        <label htmlFor="upload-main" className="cursor-pointer">
                           Upload Image
                           <input 
-                            id="upload" 
+                            id="upload-main" 
                             type="file" 
                             accept="image/*" 
                             className="hidden" 
@@ -609,7 +713,7 @@ const PhotoEditing: React.FC = () => {
               </Card>
             </div>
             
-            {/* Right sidebar with tools */}
+            {/* Right sidebar with functional editing tools */}
             <div className="lg:col-span-1">
               <Card>
                 <CardHeader className="pb-3">
@@ -642,17 +746,21 @@ const PhotoEditing: React.FC = () => {
                           <div 
                             key={filter.id}
                             className={`cursor-pointer p-1 border rounded-md text-center ${selectedFilter === filter.id ? 'border-purple-600 bg-purple-50' : ''}`}
-                            onClick={() => setSelectedFilter(filter.id)}
+                            onClick={() => handleFilterSelect(filter.id)}
                           >
                             <div className="h-14 bg-gray-200 rounded mb-1 overflow-hidden">
                               {selectedImage ? (
                                 <img 
                                   src={selectedImage} 
                                   alt={filter.name} 
-                                  className={`h-full w-full object-cover ${filter.class}`}
+                                  className="h-full w-full object-cover"
+                                  style={{ filter: filter.filterCSS }}
                                 />
                               ) : (
-                                <div className={`h-full w-full bg-gradient-to-br from-gray-300 to-gray-200 ${filter.class}`}></div>
+                                <div 
+                                  className="h-full w-full bg-gradient-to-br from-gray-300 to-gray-200"
+                                  style={{ filter: filter.filterCSS }}
+                                ></div>
                               )}
                             </div>
                             <span className="text-xs">{filter.name}</span>
@@ -665,11 +773,12 @@ const PhotoEditing: React.FC = () => {
                       <div>
                         <div className="flex justify-between mb-2">
                           <label className="text-sm">Brightness</label>
-                          <span className="text-xs">{brightness}</span>
+                          <span className="text-xs">{brightness}%</span>
                         </div>
                         <Slider 
                           value={[brightness]} 
-                          max={100} 
+                          min={0}
+                          max={200} 
                           step={1} 
                           onValueChange={handleBrightnessChange}
                         />
@@ -678,11 +787,12 @@ const PhotoEditing: React.FC = () => {
                       <div>
                         <div className="flex justify-between mb-2">
                           <label className="text-sm">Contrast</label>
-                          <span className="text-xs">{contrast}</span>
+                          <span className="text-xs">{contrast}%</span>
                         </div>
                         <Slider 
                           value={[contrast]} 
-                          max={100} 
+                          min={0}
+                          max={200} 
                           step={1} 
                           onValueChange={handleContrastChange}
                         />
@@ -691,11 +801,12 @@ const PhotoEditing: React.FC = () => {
                       <div>
                         <div className="flex justify-between mb-2">
                           <label className="text-sm">Saturation</label>
-                          <span className="text-xs">{saturation}</span>
+                          <span className="text-xs">{saturation}%</span>
                         </div>
                         <Slider 
                           value={[saturation]} 
-                          max={100} 
+                          min={0}
+                          max={200} 
                           step={1} 
                           onValueChange={handleSaturationChange}
                         />
@@ -704,11 +815,12 @@ const PhotoEditing: React.FC = () => {
                       <div>
                         <div className="flex justify-between mb-2">
                           <label className="text-sm">Temperature</label>
-                          <span className="text-xs">{temperature}</span>
+                          <span className="text-xs">{temperature}°</span>
                         </div>
                         <Slider 
                           value={[temperature]} 
-                          max={100} 
+                          min={-180}
+                          max={180} 
                           step={1} 
                           onValueChange={handleTemperatureChange}
                         />
@@ -717,24 +829,54 @@ const PhotoEditing: React.FC = () => {
                     
                     <TabsContent value="text" className="pt-4">
                       <div className="space-y-2">
-                        <Button variant="outline" className="w-full justify-start" onClick={handleAddHeading}>
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start" 
+                          onClick={() => handleAddText("heading")}
+                          disabled={!selectedImage}
+                        >
                           <span>Add heading</span>
                         </Button>
-                        <Button variant="outline" className="w-full justify-start" onClick={handleAddSubheading}>
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start" 
+                          onClick={() => handleAddText("subheading")}
+                          disabled={!selectedImage}
+                        >
                           <span>Add subheading</span>
                         </Button>
-                        <Button variant="outline" className="w-full justify-start" onClick={handleAddBodyText}>
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start" 
+                          onClick={() => handleAddText("body")}
+                          disabled={!selectedImage}
+                        >
                           <span>Add body text</span>
                         </Button>
                       </div>
                       
-                      {addedText && (
+                      {selectedElement && (
                         <div className="mt-4 space-y-2">
-                          <label className="text-sm font-medium">Edit Text</label>
+                          <label className="text-sm font-medium">Edit Selected Text</label>
                           <Input 
-                            value={addedText} 
-                            onChange={(e) => setAddedText(e.target.value)} 
+                            value={textElements.find(t => t.id === selectedElement)?.text || ""} 
+                            onChange={(e) => updateTextElement(selectedElement, { text: e.target.value })} 
                           />
+                          <div className="flex space-x-2">
+                            <Input 
+                              type="color"
+                              value={textElements.find(t => t.id === selectedElement)?.color || "#ffffff"}
+                              onChange={(e) => updateTextElement(selectedElement, { color: e.target.value })}
+                              className="w-16 h-8"
+                            />
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => removeTextElement(selectedElement)}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       )}
                       
