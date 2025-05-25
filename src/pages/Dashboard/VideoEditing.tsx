@@ -16,7 +16,13 @@ import {
   Search,
   Download,
   Settings,
-  Copy
+  Copy,
+  Smile,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Volume2
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -24,6 +30,8 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import TemplateGallery, { Template } from "@/components/Dashboard/TemplateGallery";
+import StickerLibrary, { Sticker } from "@/components/Dashboard/StickerLibrary";
+import GifLibrary, { GifItem } from "@/components/Dashboard/GifLibrary";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
@@ -34,6 +42,10 @@ const VideoEditing: React.FC = () => {
   const [editingMode, setEditingMode] = useState(false);
   const [selectedTabInEditor, setSelectedTabInEditor] = useState<string>("trim");
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration] = useState(35);
+  const [volume, setVolume] = useState(50);
   
   // Template categories
   const categories = ["All", "Business", "Story", "Promo", "Social Media"];
@@ -47,6 +59,8 @@ const VideoEditing: React.FC = () => {
   const [selectedTransition, setSelectedTransition] = useState<string | null>(null);
   const [trimStart, setTrimStart] = useState<number>(0);
   const [trimEnd, setTrimEnd] = useState<number>(100);
+  const [addedStickers, setAddedStickers] = useState<Sticker[]>([]);
+  const [addedGifs, setAddedGifs] = useState<GifItem[]>([]);
   
   // Sample templates with descriptions and more options
   const templates: Template[] = [
@@ -153,8 +167,6 @@ const VideoEditing: React.FC = () => {
     if (template) {
       setCustomTemplate(template);
       setEditingMode(true);
-      
-      // Set a sample video preview based on the template
       setVideoPreview(template.thumbnail);
       
       toast({
@@ -184,7 +196,6 @@ const VideoEditing: React.FC = () => {
       description: "Your video is being prepared for export",
     });
 
-    // Simulate export process
     setTimeout(() => {
       toast({
         title: "Export Complete",
@@ -194,10 +205,11 @@ const VideoEditing: React.FC = () => {
   };
 
   const handleAddTitle = () => {
-    setTextTitle("New Title");
+    const newTitle = `Title ${Date.now()}`;
+    setTextTitle(newTitle);
     toast({
       title: "Title Added",
-      description: "You can now edit the title text",
+      description: "Title has been added to your video",
     });
   };
 
@@ -219,17 +231,23 @@ const VideoEditing: React.FC = () => {
 
   const handleTrimStartChange = (value: number[]) => {
     setTrimStart(value[0]);
+    if (value[0] >= trimEnd) {
+      setTrimEnd(value[0] + 5);
+    }
     toast({
-      title: "Trim Start Updated",
-      description: `Trim start set to ${value[0]}%`,
+      title: "Trim Applied",
+      description: `Video trimmed from ${value[0]}% to ${trimEnd}%`,
     });
   };
 
   const handleTrimEndChange = (value: number[]) => {
     setTrimEnd(value[0]);
+    if (value[0] <= trimStart) {
+      setTrimStart(Math.max(0, value[0] - 5));
+    }
     toast({
-      title: "Trim End Updated",
-      description: `Trim end set to ${value[0]}%`,
+      title: "Trim Applied",
+      description: `Video trimmed from ${trimStart}% to ${value[0]}%`,
     });
   };
 
@@ -246,6 +264,72 @@ const VideoEditing: React.FC = () => {
       title: "Filter Applied",
       description: "The selected filter has been applied to your video",
     });
+  };
+
+  // Video player controls
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
+    toast({
+      title: isPlaying ? "Video Paused" : "Video Playing",
+      description: isPlaying ? "Video playback paused" : "Video playback started",
+    });
+  };
+
+  const handleSeek = (value: number[]) => {
+    const newTime = (value[0] / 100) * duration;
+    setCurrentTime(newTime);
+    toast({
+      title: "Video Seeked",
+      description: `Seeked to ${Math.floor(newTime)}s`,
+    });
+  };
+
+  const handleVolumeChange = (value: number[]) => {
+    setVolume(value[0]);
+    toast({
+      title: "Volume Changed",
+      description: `Volume set to ${value[0]}%`,
+    });
+  };
+
+  const handleSkipBack = () => {
+    const newTime = Math.max(0, currentTime - 10);
+    setCurrentTime(newTime);
+    toast({
+      title: "Skipped Back",
+      description: "Skipped back 10 seconds",
+    });
+  };
+
+  const handleSkipForward = () => {
+    const newTime = Math.min(duration, currentTime + 10);
+    setCurrentTime(newTime);
+    toast({
+      title: "Skipped Forward",
+      description: "Skipped forward 10 seconds",
+    });
+  };
+
+  const handleStickerSelect = (sticker: Sticker) => {
+    setAddedStickers(prev => [...prev, sticker]);
+    toast({
+      title: "Sticker Added",
+      description: `${sticker.name} sticker added to your video`,
+    });
+  };
+
+  const handleGifSelect = (gif: GifItem) => {
+    setAddedGifs(prev => [...prev, gif]);
+    toast({
+      title: "GIF Added",
+      description: `${gif.title} GIF added to replace shapes`,
+    });
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
   return (
@@ -521,33 +605,70 @@ const VideoEditing: React.FC = () => {
                         <h2 className="text-white text-xl font-bold bg-black bg-opacity-50 inline-block px-4 py-2">{textTitle}</h2>
                       </div>
                     )}
+                    {addedStickers.map((sticker, index) => (
+                      <div 
+                        key={`sticker-${index}`}
+                        className="absolute text-4xl cursor-move"
+                        style={{ 
+                          top: `${20 + (index * 10)}%`, 
+                          left: `${20 + (index * 10)}%`
+                        }}
+                      >
+                        {sticker.url}
+                      </div>
+                    ))}
+                    {addedGifs.map((gif, index) => (
+                      <div 
+                        key={`gif-${index}`}
+                        className="absolute cursor-move"
+                        style={{ 
+                          top: `${30 + (index * 10)}%`, 
+                          right: `${20 + (index * 10)}%`,
+                          width: '80px',
+                          height: '80px'
+                        }}
+                      >
+                        <img 
+                          src={gif.preview} 
+                          alt={gif.title}
+                          className="w-full h-full object-cover rounded"
+                        />
+                      </div>
+                    ))}
                   </div>
                   <div className="flex items-center justify-between mt-4">
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-rewind">
-                          <polygon points="11 19 2 12 11 5 11 19"></polygon>
-                          <polygon points="22 19 13 12 22 5 22 19"></polygon>
-                        </svg>
+                      <Button variant="outline" size="sm" onClick={handleSkipBack}>
+                        <SkipBack className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-play">
-                          <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                        </svg>
+                      <Button variant="outline" size="sm" onClick={handlePlayPause}>
+                        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                       </Button>
-                      <Button variant="outline" size="sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-fast-forward">
-                          <polygon points="13 19 22 12 13 5 13 19"></polygon>
-                          <polygon points="2 19 11 12 2 5 2 19"></polygon>
-                        </svg>
+                      <Button variant="outline" size="sm" onClick={handleSkipForward}>
+                        <SkipForward className="h-4 w-4" />
                       </Button>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Volume2 className="h-4 w-4" />
+                        <Slider 
+                          value={[volume]} 
+                          max={100} 
+                          step={1} 
+                          className="w-20"
+                          onValueChange={handleVolumeChange}
+                        />
+                      </div>
                     </div>
                     <div className="text-sm">
-                      00:00 / 00:35
+                      {formatTime(currentTime)} / {formatTime(duration)}
                     </div>
                   </div>
                   <div className="mt-4">
-                    <Slider defaultValue={[0]} max={100} step={1} />
+                    <Slider 
+                      value={[(currentTime / duration) * 100]} 
+                      max={100} 
+                      step={0.1}
+                      onValueChange={handleSeek}
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -561,7 +682,7 @@ const VideoEditing: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <Tabs defaultValue={selectedTabInEditor} onValueChange={setSelectedTabInEditor}>
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-2">
                       <TabsTrigger value="trim" className="text-xs">
                         <Scissors className="h-4 w-4 mb-1" />
                         <span>Trim</span>
@@ -570,6 +691,8 @@ const VideoEditing: React.FC = () => {
                         <Type className="h-4 w-4 mb-1" />
                         <span>Text</span>
                       </TabsTrigger>
+                    </TabsList>
+                    <TabsList className="grid w-full grid-cols-3 mt-2">
                       <TabsTrigger value="music" className="text-xs">
                         <Music className="h-4 w-4 mb-1" />
                         <span>Audio</span>
@@ -583,6 +706,10 @@ const VideoEditing: React.FC = () => {
                           <path d="M17 19h4"></path>
                         </svg>
                         <span>Effects</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="stickers" className="text-xs">
+                        <Smile className="h-4 w-4 mb-1" />
+                        <span>Stickers</span>
                       </TabsTrigger>
                     </TabsList>
                     
@@ -757,6 +884,15 @@ const VideoEditing: React.FC = () => {
                           <div className="aspect-square bg-gray-700 rounded-md cursor-pointer" onClick={handleSelectFilter}></div>
                         </div>
                       </div>
+                      
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium mb-2">Replace Shapes with GIFs</h4>
+                        <GifLibrary onGifSelect={handleGifSelect} />
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="stickers" className="pt-4">
+                      <StickerLibrary onStickerSelect={handleStickerSelect} />
                     </TabsContent>
                   </Tabs>
                   
