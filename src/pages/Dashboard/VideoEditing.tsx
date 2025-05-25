@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,9 @@ import {
   Pause,
   SkipBack,
   SkipForward,
-  Volume2
+  Volume2,
+  Upload,
+  Trash2
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -35,34 +37,67 @@ import GifLibrary, { GifItem } from "@/components/Dashboard/GifLibrary";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
+interface MediaAsset {
+  id: string;
+  name: string;
+  type: 'video' | 'image' | 'audio';
+  url: string;
+  duration?: string;
+  size?: string;
+}
+
+interface AudioTrack {
+  id: string;
+  name: string;
+  type: 'background' | 'voiceover';
+  volume: number;
+  url: string;
+}
+
 const VideoEditing: React.FC = () => {
   const { toast } = useToast();
+  const videoFileRef = useRef<HTMLInputElement>(null);
+  const imageFileRef = useRef<HTMLInputElement>(null);
+  const audioFileRef = useRef<HTMLInputElement>(null);
+  
+  // Template and editing state
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [customTemplate, setCustomTemplate] = useState<Template | null>(null);
   const [editingMode, setEditingMode] = useState(false);
   const [selectedTabInEditor, setSelectedTabInEditor] = useState<string>("trim");
+  
+  // Media assets state
+  const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([
+    { id: "1", name: "intro_clip.mp4", type: "video", url: "", duration: "00:12", size: "720p" },
+    { id: "2", name: "product_demo.mp4", type: "video", url: "", duration: "00:25", size: "1080p" },
+    { id: "3", name: "background_music.mp3", type: "audio", url: "", duration: "01:42" },
+    { id: "4", name: "voice_over.mp3", type: "audio", url: "", duration: "00:35" },
+  ]);
+  
+  // Video player state
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration] = useState(35);
   const [volume, setVolume] = useState(50);
   
-  // Template categories
-  const categories = ["All", "Business", "Story", "Promo", "Social Media"];
-  const [activeCategory, setActiveCategory] = useState("All");
-  
-  // State for customizations
-  const [textTitle, setTextTitle] = useState<string>("");
-  const [musicVolume, setMusicVolume] = useState<number>(50);
-  const [voiceVolume, setVoiceVolume] = useState<number>(80);
-  const [selectedEffect, setSelectedEffect] = useState<string | null>(null);
+  // Editing tools state
+  const [textElements, setTextElements] = useState<Array<{id: string, text: string, style: string}>>([]);
+  const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([
+    { id: "1", name: "Background Music", type: "background", volume: 50, url: "" },
+    { id: "2", name: "Voice Over", type: "voiceover", volume: 80, url: "" }
+  ]);
   const [selectedTransition, setSelectedTransition] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [trimStart, setTrimStart] = useState<number>(0);
   const [trimEnd, setTrimEnd] = useState<number>(100);
   const [addedStickers, setAddedStickers] = useState<Sticker[]>([]);
   const [addedGifs, setAddedGifs] = useState<GifItem[]>([]);
   
-  // Sample templates with descriptions and more options
+  // Template categories and templates data
+  const categories = ["All", "Business", "Story", "Promo", "Social Media"];
+  const [activeCategory, setActiveCategory] = useState("All");
+  
   const templates: Template[] = [
     { 
       id: "1", 
@@ -141,116 +176,135 @@ const VideoEditing: React.FC = () => {
   const filteredTemplates = activeCategory === "All" 
     ? templates 
     : templates.filter(template => template.category === activeCategory);
-  
-  // Sample timeline elements
-  const timelineElements = [
-    { id: "1", type: "video", name: "Intro.mp4", duration: "0:05" },
-    { id: "2", type: "text", name: "Title Text", duration: "0:03" },
-    { id: "3", type: "video", name: "Product Demo.mp4", duration: "0:12" },
-    { id: "4", type: "image", name: "Product Image.jpg", duration: "0:04" },
-    { id: "5", type: "video", name: "Testimonial.mp4", duration: "0:08" },
-    { id: "6", type: "text", name: "Call to Action", duration: "0:03" },
-  ];
-  
-  const handleSelectTemplate = (templateId: string) => {
-    setSelectedTemplate(templateId);
-    const template = templates.find(t => t.id === templateId);
-    
-    toast({
-      title: "Template Selected",
-      description: `You selected the ${template?.title} template`,
-    });
-  };
 
-  const handleUseTemplate = () => {
-    const template = templates.find(t => t.id === selectedTemplate);
-    if (template) {
-      setCustomTemplate(template);
-      setEditingMode(true);
-      setVideoPreview(template.thumbnail);
-      
+  // File upload handlers
+  const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const newAsset: MediaAsset = {
+        id: Date.now().toString(),
+        name: file.name,
+        type: 'video',
+        url: url,
+        duration: "00:00",
+        size: "Unknown"
+      };
+      setMediaAssets(prev => [...prev, newAsset]);
+      setVideoPreview(url);
       toast({
-        title: "Template Loaded",
-        description: "You can now customize this template in the editor",
+        title: "Video Uploaded",
+        description: `${file.name} has been added to your media assets`,
       });
     }
   };
 
-  const handleCreateCopy = () => {
-    toast({
-      title: "Template Duplicated",
-      description: "A copy of this template has been created for customization",
-    });
-  };
-
-  const handleSaveTemplate = () => {
-    toast({
-      title: "Template Saved",
-      description: "Your customized template has been saved",
-    });
-  };
-
-  const handleExport = () => {
-    toast({
-      title: "Exporting Video",
-      description: "Your video is being prepared for export",
-    });
-
-    setTimeout(() => {
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const newAsset: MediaAsset = {
+        id: Date.now().toString(),
+        name: file.name,
+        type: 'image',
+        url: url,
+        size: `${Math.round(file.size / 1024)}KB`
+      };
+      setMediaAssets(prev => [...prev, newAsset]);
       toast({
-        title: "Export Complete",
-        description: "Your video has been successfully exported",
+        title: "Image Uploaded",
+        description: `${file.name} has been added to your media assets`,
       });
-    }, 2000);
-  };
-
-  const handleAddTitle = () => {
-    const newTitle = `Title ${Date.now()}`;
-    setTextTitle(newTitle);
-    toast({
-      title: "Title Added",
-      description: "Title has been added to your video",
-    });
-  };
-
-  const handleMusicVolumeChange = (value: number[]) => {
-    setMusicVolume(value[0]);
-    toast({
-      title: "Music Volume Updated",
-      description: `Music volume set to ${value[0]}%`,
-    });
-  };
-
-  const handleVoiceVolumeChange = (value: number[]) => {
-    setVoiceVolume(value[0]);
-    toast({
-      title: "Voice Volume Updated",
-      description: `Voice volume set to ${value[0]}%`,
-    });
-  };
-
-  const handleTrimStartChange = (value: number[]) => {
-    setTrimStart(value[0]);
-    if (value[0] >= trimEnd) {
-      setTrimEnd(value[0] + 5);
     }
-    toast({
-      title: "Trim Applied",
-      description: `Video trimmed from ${value[0]}% to ${trimEnd}%`,
-    });
   };
 
-  const handleTrimEndChange = (value: number[]) => {
-    setTrimEnd(value[0]);
-    if (value[0] <= trimStart) {
-      setTrimStart(Math.max(0, value[0] - 5));
+  const handleAudioUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const newAsset: MediaAsset = {
+        id: Date.now().toString(),
+        name: file.name,
+        type: 'audio',
+        url: url,
+        duration: "00:00"
+      };
+      setMediaAssets(prev => [...prev, newAsset]);
+      const newTrack: AudioTrack = {
+        id: Date.now().toString(),
+        name: file.name,
+        type: 'background',
+        volume: 50,
+        url: url
+      };
+      setAudioTracks(prev => [...prev, newTrack]);
+      toast({
+        title: "Audio Uploaded",
+        description: `${file.name} has been added to your media assets`,
+      });
     }
+  };
+
+  const handleDeleteAsset = (assetId: string) => {
+    setMediaAssets(prev => prev.filter(asset => asset.id !== assetId));
     toast({
-      title: "Trim Applied",
-      description: `Video trimmed from ${trimStart}% to ${value[0]}%`,
+      title: "Asset Deleted",
+      description: "Media asset has been removed",
     });
   };
 
+  // Text editing functions
+  const handleAddText = (textType: string) => {
+    const newText = {
+      id: Date.now().toString(),
+      text: `${textType} Text`,
+      style: textType
+    };
+    setTextElements(prev => [...prev, newText]);
+    toast({
+      title: "Text Added",
+      description: `${textType} has been added to your video`,
+    });
+  };
+
+  const handleUpdateText = (id: string, newText: string) => {
+    setTextElements(prev => 
+      prev.map(element => 
+        element.id === id ? { ...element, text: newText } : element
+      )
+    );
+  };
+
+  const handleDeleteText = (id: string) => {
+    setTextElements(prev => prev.filter(element => element.id !== id));
+    toast({
+      title: "Text Removed",
+      description: "Text element has been deleted",
+    });
+  };
+
+  // Audio controls
+  const handleAudioVolumeChange = (trackId: string, volume: number) => {
+    setAudioTracks(prev => 
+      prev.map(track => 
+        track.id === trackId ? { ...track, volume } : track
+      )
+    );
+    toast({
+      title: "Audio Volume Updated",
+      description: `Volume set to ${volume}%`,
+    });
+  };
+
+  const handleDeleteAudioTrack = (trackId: string) => {
+    setAudioTracks(prev => prev.filter(track => track.id !== trackId));
+    toast({
+      title: "Audio Track Removed",
+      description: "Audio track has been deleted",
+    });
+  };
+
+  // Transition and effects
   const handleSelectTransition = (transition: string) => {
     setSelectedTransition(transition);
     toast({
@@ -259,10 +313,36 @@ const VideoEditing: React.FC = () => {
     });
   };
 
-  const handleSelectFilter = () => {
+  const handleSelectFilter = (filter: string) => {
+    setSelectedFilter(filter);
     toast({
       title: "Filter Applied",
-      description: "The selected filter has been applied to your video",
+      description: `${filter} filter has been applied`,
+    });
+  };
+
+  // Trimming controls
+  const handleTrimStartChange = (value: number[]) => {
+    const newStart = value[0];
+    setTrimStart(newStart);
+    if (newStart >= trimEnd) {
+      setTrimEnd(Math.min(100, newStart + 5));
+    }
+    toast({
+      title: "Trim Updated",
+      description: `Video trimmed from ${newStart}% to ${trimEnd}%`,
+    });
+  };
+
+  const handleTrimEndChange = (value: number[]) => {
+    const newEnd = value[0];
+    setTrimEnd(newEnd);
+    if (newEnd <= trimStart) {
+      setTrimStart(Math.max(0, newEnd - 5));
+    }
+    toast({
+      title: "Trim Updated",
+      description: `Video trimmed from ${trimStart}% to ${newEnd}%`,
     });
   };
 
@@ -278,38 +358,23 @@ const VideoEditing: React.FC = () => {
   const handleSeek = (value: number[]) => {
     const newTime = (value[0] / 100) * duration;
     setCurrentTime(newTime);
-    toast({
-      title: "Video Seeked",
-      description: `Seeked to ${Math.floor(newTime)}s`,
-    });
   };
 
   const handleVolumeChange = (value: number[]) => {
     setVolume(value[0]);
-    toast({
-      title: "Volume Changed",
-      description: `Volume set to ${value[0]}%`,
-    });
   };
 
   const handleSkipBack = () => {
     const newTime = Math.max(0, currentTime - 10);
     setCurrentTime(newTime);
-    toast({
-      title: "Skipped Back",
-      description: "Skipped back 10 seconds",
-    });
   };
 
   const handleSkipForward = () => {
     const newTime = Math.min(duration, currentTime + 10);
     setCurrentTime(newTime);
-    toast({
-      title: "Skipped Forward",
-      description: "Skipped forward 10 seconds",
-    });
   };
 
+  // Sticker and GIF handlers
   const handleStickerSelect = (sticker: Sticker) => {
     setAddedStickers(prev => [...prev, sticker]);
     toast({
@@ -322,8 +387,61 @@ const VideoEditing: React.FC = () => {
     setAddedGifs(prev => [...prev, gif]);
     toast({
       title: "GIF Added",
-      description: `${gif.title} GIF added to replace shapes`,
+      description: `${gif.title} GIF added to your video`,
     });
+  };
+
+  const handleDeleteSticker = (index: number) => {
+    setAddedStickers(prev => prev.filter((_, i) => i !== index));
+    toast({
+      title: "Sticker Removed",
+      description: "Sticker has been removed from your video",
+    });
+  };
+
+  const handleDeleteGif = (index: number) => {
+    setAddedGifs(prev => prev.filter((_, i) => i !== index));
+    toast({
+      title: "GIF Removed",
+      description: "GIF has been removed from your video",
+    });
+  };
+
+  // Template handlers
+  const handleSelectTemplate = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    const template = templates.find(t => t.id === templateId);
+    toast({
+      title: "Template Selected",
+      description: `You selected the ${template?.title} template`,
+    });
+  };
+
+  const handleUseTemplate = () => {
+    const template = templates.find(t => t.id === selectedTemplate);
+    if (template) {
+      setCustomTemplate(template);
+      setEditingMode(true);
+      setVideoPreview(template.thumbnail);
+      toast({
+        title: "Template Loaded",
+        description: "You can now customize this template in the editor",
+      });
+    }
+  };
+
+  const handleExport = () => {
+    toast({
+      title: "Exporting Video",
+      description: "Your video is being prepared for export",
+    });
+
+    setTimeout(() => {
+      toast({
+        title: "Export Complete",
+        description: "Your video has been successfully exported",
+      });
+    }, 3000);
   };
 
   const formatTime = (seconds: number) => {
@@ -331,12 +449,40 @@ const VideoEditing: React.FC = () => {
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Hidden file inputs
+  const hiddenFileInputs = (
+    <>
+      <input
+        type="file"
+        ref={videoFileRef}
+        onChange={handleVideoUpload}
+        accept="video/*"
+        style={{ display: 'none' }}
+      />
+      <input
+        type="file"
+        ref={imageFileRef}
+        onChange={handleImageUpload}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
+      <input
+        type="file"
+        ref={audioFileRef}
+        onChange={handleAudioUpload}
+        accept="audio/*"
+        style={{ display: 'none' }}
+      />
+    </>
+  );
   
   return (
     <DashboardLayout pageTitle="Video Editing">
+      {hiddenFileInputs}
       <div className="mb-6">
         <h2 className="text-2xl font-semibold">Video Editing Studio</h2>
-        <p className="text-gray-600">Create professional videos for your social media and marketing.</p>
+        <p className="text-gray-600">Create professional videos with full editing capabilities.</p>
       </div>
       
       <Tabs defaultValue={editingMode ? "editor" : "templates"} onValueChange={(value) => {
@@ -386,77 +532,7 @@ const VideoEditing: React.FC = () => {
               />
               
               <div className="mt-6 flex justify-end gap-2">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Custom Size
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create Custom Video</DialogTitle>
-                      <DialogDescription>
-                        Set your desired dimensions and format for a custom video project.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Width (px)</label>
-                          <Input type="number" defaultValue={1920} />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Height (px)</label>
-                          <Input type="number" defaultValue={1080} />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Preset</label>
-                        <Select defaultValue="16:9">
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select aspect ratio" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="16:9">16:9 (Landscape)</SelectItem>
-                            <SelectItem value="9:16">9:16 (Portrait)</SelectItem>
-                            <SelectItem value="1:1">1:1 (Square)</SelectItem>
-                            <SelectItem value="4:5">4:5 (Instagram)</SelectItem>
-                            <SelectItem value="custom">Custom</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Frame Rate</label>
-                        <Select defaultValue="30">
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select frame rate" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="24">24 fps (Cinematic)</SelectItem>
-                            <SelectItem value="30">30 fps (Standard)</SelectItem>
-                            <SelectItem value="60">60 fps (Smooth)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline">Cancel</Button>
-                      <Button onClick={() => {
-                        setEditingMode(true);
-                        setCustomTemplate(null);
-                        toast({
-                          title: "Custom Project Created",
-                          description: "You can now start editing your custom video"
-                        });
-                      }}>
-                        Create Project
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                
-                <Button variant="outline">
+                <Button variant="outline" onClick={() => videoFileRef.current?.click()}>
                   <FileVideo className="h-4 w-4 mr-2" />
                   Upload Video
                 </Button>
@@ -497,26 +573,26 @@ const VideoEditing: React.FC = () => {
                     
                     <TabsContent value="videos" className="pt-4">
                       <div className="space-y-2">
-                        <div className="p-3 border rounded-md flex items-center">
-                          <div className="w-12 h-12 bg-gray-200 rounded mr-3 flex-shrink-0 flex items-center justify-center">
-                            <FileVideo className="h-5 w-5 text-gray-500" />
+                        {mediaAssets.filter(asset => asset.type === 'video').map((asset) => (
+                          <div key={asset.id} className="p-3 border rounded-md flex items-center">
+                            <div className="w-12 h-12 bg-gray-200 rounded mr-3 flex-shrink-0 flex items-center justify-center">
+                              <FileVideo className="h-5 w-5 text-gray-500" />
+                            </div>
+                            <div className="overflow-hidden flex-grow">
+                              <p className="text-sm font-medium truncate">{asset.name}</p>
+                              <p className="text-xs text-gray-500">{asset.duration} • {asset.size}</p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteAsset(asset.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
-                          <div className="overflow-hidden">
-                            <p className="text-sm font-medium truncate">intro_clip.mp4</p>
-                            <p className="text-xs text-gray-500">00:12 • 720p</p>
-                          </div>
-                        </div>
-                        <div className="p-3 border rounded-md flex items-center">
-                          <div className="w-12 h-12 bg-gray-200 rounded mr-3 flex-shrink-0 flex items-center justify-center">
-                            <FileVideo className="h-5 w-5 text-gray-500" />
-                          </div>
-                          <div className="overflow-hidden">
-                            <p className="text-sm font-medium truncate">product_demo.mp4</p>
-                            <p className="text-xs text-gray-500">00:25 • 1080p</p>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                      <Button className="w-full mt-4">
+                      <Button className="w-full mt-4" onClick={() => videoFileRef.current?.click()}>
                         <Plus className="h-4 w-4 mr-2" />
                         Upload Video
                       </Button>
@@ -524,20 +600,27 @@ const VideoEditing: React.FC = () => {
                     
                     <TabsContent value="images" className="pt-4">
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="aspect-square bg-gray-200 rounded-md flex items-center justify-center">
-                          <Image className="h-6 w-6 text-gray-400" />
-                        </div>
-                        <div className="aspect-square bg-gray-200 rounded-md flex items-center justify-center">
-                          <Image className="h-6 w-6 text-gray-400" />
-                        </div>
-                        <div className="aspect-square bg-gray-200 rounded-md flex items-center justify-center">
-                          <Image className="h-6 w-6 text-gray-400" />
-                        </div>
-                        <div className="aspect-square bg-gray-200 rounded-md flex items-center justify-center">
-                          <Image className="h-6 w-6 text-gray-400" />
-                        </div>
+                        {mediaAssets.filter(asset => asset.type === 'image').map((asset) => (
+                          <div key={asset.id} className="relative">
+                            <div className="aspect-square bg-gray-200 rounded-md flex items-center justify-center">
+                              {asset.url ? (
+                                <img src={asset.url} alt={asset.name} className="w-full h-full object-cover rounded-md" />
+                              ) : (
+                                <Image className="h-6 w-6 text-gray-400" />
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute top-1 right-1"
+                              onClick={() => handleDeleteAsset(asset.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
                       </div>
-                      <Button className="w-full mt-4">
+                      <Button className="w-full mt-4" onClick={() => imageFileRef.current?.click()}>
                         <Plus className="h-4 w-4 mr-2" />
                         Upload Images
                       </Button>
@@ -545,26 +628,26 @@ const VideoEditing: React.FC = () => {
                     
                     <TabsContent value="audio" className="pt-4">
                       <div className="space-y-2">
-                        <div className="p-3 border rounded-md flex items-center">
-                          <div className="w-10 h-10 bg-gray-200 rounded-full mr-3 flex-shrink-0 flex items-center justify-center">
-                            <Music className="h-5 w-5 text-gray-500" />
+                        {mediaAssets.filter(asset => asset.type === 'audio').map((asset) => (
+                          <div key={asset.id} className="p-3 border rounded-md flex items-center">
+                            <div className="w-10 h-10 bg-gray-200 rounded-full mr-3 flex-shrink-0 flex items-center justify-center">
+                              <Music className="h-5 w-5 text-gray-500" />
+                            </div>
+                            <div className="overflow-hidden flex-grow">
+                              <p className="text-sm font-medium truncate">{asset.name}</p>
+                              <p className="text-xs text-gray-500">{asset.duration}</p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteAsset(asset.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
-                          <div className="overflow-hidden">
-                            <p className="text-sm font-medium truncate">background_music.mp3</p>
-                            <p className="text-xs text-gray-500">01:42</p>
-                          </div>
-                        </div>
-                        <div className="p-3 border rounded-md flex items-center">
-                          <div className="w-10 h-10 bg-gray-200 rounded-full mr-3 flex-shrink-0 flex items-center justify-center">
-                            <Music className="h-5 w-5 text-gray-500" />
-                          </div>
-                          <div className="overflow-hidden">
-                            <p className="text-sm font-medium truncate">voice_over.mp3</p>
-                            <p className="text-xs text-gray-500">00:35</p>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                      <Button className="w-full mt-4">
+                      <Button className="w-full mt-4" onClick={() => audioFileRef.current?.click()}>
                         <Plus className="h-4 w-4 mr-2" />
                         Upload Audio
                       </Button>
@@ -582,15 +665,12 @@ const VideoEditing: React.FC = () => {
                   {customTemplate && (
                     <div className="flex items-center text-sm">
                       <span className="text-gray-500 mr-2">Template:</span>
-                      <Badge variant="accent">{customTemplate.title}</Badge>
-                      <Button variant="ghost" size="icon" onClick={handleCreateCopy}>
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                      <Badge variant="secondary">{customTemplate.title}</Badge>
                     </div>
                   )}
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col">
-                  <div className="flex-grow bg-black rounded-md flex items-center justify-center relative">
+                  <div className="flex-grow bg-black rounded-md flex items-center justify-center relative min-h-[300px]">
                     {videoPreview ? (
                       <img 
                         src={videoPreview} 
@@ -600,27 +680,50 @@ const VideoEditing: React.FC = () => {
                     ) : (
                       <Video className="h-16 w-16 text-white opacity-20" />
                     )}
-                    {textTitle && (
-                      <div className="absolute bottom-4 left-0 right-0 text-center">
-                        <h2 className="text-white text-xl font-bold bg-black bg-opacity-50 inline-block px-4 py-2">{textTitle}</h2>
+                    
+                    {/* Text overlays */}
+                    {textElements.map((element, index) => (
+                      <div 
+                        key={element.id}
+                        className="absolute text-white cursor-move"
+                        style={{ 
+                          top: `${20 + (index * 8)}%`, 
+                          left: `${20 + (index * 5)}%`,
+                          fontSize: element.style === 'Title' ? '24px' : '16px',
+                          fontWeight: element.style === 'Title' ? 'bold' : 'normal'
+                        }}
+                      >
+                        {element.text}
                       </div>
-                    )}
+                    ))}
+                    
+                    {/* Sticker overlays */}
                     {addedStickers.map((sticker, index) => (
                       <div 
                         key={`sticker-${index}`}
-                        className="absolute text-4xl cursor-move"
+                        className="absolute text-4xl cursor-move group"
                         style={{ 
                           top: `${20 + (index * 10)}%`, 
                           left: `${20 + (index * 10)}%`
                         }}
                       >
                         {sticker.url}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleDeleteSticker(index)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
                     ))}
+                    
+                    {/* GIF overlays */}
                     {addedGifs.map((gif, index) => (
                       <div 
                         key={`gif-${index}`}
-                        className="absolute cursor-move"
+                        className="absolute cursor-move group"
                         style={{ 
                           top: `${30 + (index * 10)}%`, 
                           right: `${20 + (index * 10)}%`,
@@ -633,9 +736,19 @@ const VideoEditing: React.FC = () => {
                           alt={gif.title}
                           className="w-full h-full object-cover rounded"
                         />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleDeleteGif(index)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
                     ))}
                   </div>
+                  
+                  {/* Video controls */}
                   <div className="flex items-center justify-between mt-4">
                     <div className="flex space-x-2">
                       <Button variant="outline" size="sm" onClick={handleSkipBack}>
@@ -662,6 +775,8 @@ const VideoEditing: React.FC = () => {
                       {formatTime(currentTime)} / {formatTime(duration)}
                     </div>
                   </div>
+                  
+                  {/* Progress bar */}
                   <div className="mt-4">
                     <Slider 
                       value={[(currentTime / duration) * 100]} 
@@ -713,6 +828,7 @@ const VideoEditing: React.FC = () => {
                       </TabsTrigger>
                     </TabsList>
                     
+                    {/* Trim tab */}
                     <TabsContent value="trim" className="pt-4 space-y-4">
                       <div>
                         <div className="flex justify-between mb-2">
@@ -740,166 +856,143 @@ const VideoEditing: React.FC = () => {
                         />
                       </div>
                       
-                      <div>
-                        <Button variant="outline" className="w-full">
-                          <Scissors className="h-4 w-4 mr-2" />
-                          Split Clip
-                        </Button>
-                      </div>
+                      <Button variant="outline" className="w-full">
+                        <Scissors className="h-4 w-4 mr-2" />
+                        Apply Trim
+                      </Button>
                     </TabsContent>
                     
+                    {/* Text tab */}
                     <TabsContent value="text" className="pt-4">
                       <div className="space-y-3">
-                        <Button variant="outline" className="w-full justify-start" onClick={handleAddTitle}>
-                          <span>Add title</span>
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start" 
+                          onClick={() => handleAddText('Title')}
+                        >
+                          <span>Add Title</span>
                         </Button>
-                        <Button variant="outline" className="w-full justify-start">
-                          <span>Add subtitle</span>
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start"
+                          onClick={() => handleAddText('Subtitle')}
+                        >
+                          <span>Add Subtitle</span>
                         </Button>
-                        <Button variant="outline" className="w-full justify-start">
-                          <span>Add call to action</span>
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start"
+                          onClick={() => handleAddText('Call to Action')}
+                        >
+                          <span>Add Call to Action</span>
                         </Button>
                       </div>
                       
-                      {textTitle && (
+                      {/* Text elements list */}
+                      {textElements.length > 0 && (
                         <div className="mt-4 space-y-2">
-                          <label className="text-sm font-medium">Edit Title</label>
-                          <Input 
-                            value={textTitle} 
-                            onChange={(e) => setTextTitle(e.target.value)} 
-                          />
+                          <h4 className="text-sm font-medium">Text Elements</h4>
+                          {textElements.map((element) => (
+                            <div key={element.id} className="flex items-center gap-2">
+                              <Input 
+                                value={element.text} 
+                                onChange={(e) => handleUpdateText(element.id, e.target.value)}
+                                className="flex-grow"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteText(element.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
                         </div>
                       )}
-                      
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium mb-2">Text animations</h4>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
-                            <p className="text-sm">Fade In</p>
-                          </div>
-                          <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
-                            <p className="text-sm">Slide Up</p>
-                          </div>
-                          <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
-                            <p className="text-sm">Pop</p>
-                          </div>
-                          <div className="p-2 border rounded-md text-center cursor-pointer hover:bg-gray-100">
-                            <p className="text-sm">Bounce</p>
-                          </div>
-                        </div>
-                      </div>
                     </TabsContent>
                     
+                    {/* Audio tab */}
                     <TabsContent value="music" className="pt-4 space-y-4">
-                      <div>
-                        <div className="flex justify-between mb-2">
-                          <label className="text-sm">Music Volume</label>
-                          <span className="text-xs">{musicVolume}%</span>
+                      {audioTracks.map((track) => (
+                        <div key={track.id} className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <label className="text-sm font-medium">{track.name}</label>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteAudioTrack(track.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs">Volume</span>
+                            <span className="text-xs">{track.volume}%</span>
+                          </div>
+                          <Slider 
+                            value={[track.volume]} 
+                            max={100} 
+                            step={1} 
+                            onValueChange={(value) => handleAudioVolumeChange(track.id, value[0])} 
+                          />
                         </div>
-                        <Slider 
-                          value={[musicVolume]} 
-                          max={100} 
-                          step={1} 
-                          onValueChange={handleMusicVolumeChange} 
-                        />
-                      </div>
+                      ))}
                       
-                      <div>
-                        <div className="flex justify-between mb-2">
-                          <label className="text-sm">Voice Volume</label>
-                          <span className="text-xs">{voiceVolume}%</span>
-                        </div>
-                        <Slider 
-                          value={[voiceVolume]} 
-                          max={100} 
-                          step={1} 
-                          onValueChange={handleVoiceVolumeChange} 
-                        />
-                      </div>
-                      
-                      <div>
-                        <h4 className="text-sm font-medium mb-2">Background Music</h4>
-                        <div className="space-y-2">
-                          <div className="p-2 border rounded-md flex items-center cursor-pointer hover:bg-gray-100">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
-                              <Music className="h-4 w-4 text-gray-500" />
-                            </div>
-                            <span className="text-sm">Upbeat Pop</span>
-                          </div>
-                          <div className="p-2 border rounded-md flex items-center cursor-pointer hover:bg-gray-100">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
-                              <Music className="h-4 w-4 text-gray-500" />
-                            </div>
-                            <span className="text-sm">Corporate</span>
-                          </div>
-                          <div className="p-2 border rounded-md flex items-center cursor-pointer hover:bg-gray-100">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
-                              <Music className="h-4 w-4 text-gray-500" />
-                            </div>
-                            <span className="text-sm">Inspirational</span>
-                          </div>
-                        </div>
-                      </div>
+                      <Button className="w-full" onClick={() => audioFileRef.current?.click()}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Audio Track
+                      </Button>
                     </TabsContent>
                     
+                    {/* Effects tab */}
                     <TabsContent value="effects" className="pt-4">
                       <div>
                         <h4 className="text-sm font-medium mb-2">Transitions</h4>
                         <div className="grid grid-cols-2 gap-2">
-                          <div 
-                            className={`p-2 border rounded-md text-center cursor-pointer ${selectedTransition === 'Fade' ? 'bg-purple-100 border-purple-300' : 'hover:bg-gray-100'}`}
-                            onClick={() => handleSelectTransition('Fade')}
-                          >
-                            <p className="text-sm">Fade</p>
-                          </div>
-                          <div 
-                            className={`p-2 border rounded-md text-center cursor-pointer ${selectedTransition === 'Dissolve' ? 'bg-purple-100 border-purple-300' : 'hover:bg-gray-100'}`}
-                            onClick={() => handleSelectTransition('Dissolve')}
-                          >
-                            <p className="text-sm">Dissolve</p>
-                          </div>
-                          <div 
-                            className={`p-2 border rounded-md text-center cursor-pointer ${selectedTransition === 'Slide' ? 'bg-purple-100 border-purple-300' : 'hover:bg-gray-100'}`}
-                            onClick={() => handleSelectTransition('Slide')}
-                          >
-                            <p className="text-sm">Slide</p>
-                          </div>
-                          <div 
-                            className={`p-2 border rounded-md text-center cursor-pointer ${selectedTransition === 'Wipe' ? 'bg-purple-100 border-purple-300' : 'hover:bg-gray-100'}`}
-                            onClick={() => handleSelectTransition('Wipe')}
-                          >
-                            <p className="text-sm">Wipe</p>
-                          </div>
+                          {['Fade', 'Dissolve', 'Slide', 'Wipe'].map((transition) => (
+                            <div 
+                              key={transition}
+                              className={`p-2 border rounded-md text-center cursor-pointer ${selectedTransition === transition ? 'bg-purple-100 border-purple-300' : 'hover:bg-gray-100'}`}
+                              onClick={() => handleSelectTransition(transition)}
+                            >
+                              <p className="text-sm">{transition}</p>
+                            </div>
+                          ))}
                         </div>
                       </div>
                       
                       <div className="mt-4">
                         <h4 className="text-sm font-medium mb-2">Filters</h4>
                         <div className="grid grid-cols-3 gap-2">
-                          <div className="aspect-square bg-gray-200 rounded-md cursor-pointer" onClick={handleSelectFilter}></div>
-                          <div className="aspect-square bg-gray-300 rounded-md cursor-pointer" onClick={handleSelectFilter}></div>
-                          <div className="aspect-square bg-gray-400 rounded-md cursor-pointer" onClick={handleSelectFilter}></div>
-                          <div className="aspect-square bg-gray-500 rounded-md cursor-pointer" onClick={handleSelectFilter}></div>
-                          <div className="aspect-square bg-gray-600 rounded-md cursor-pointer" onClick={handleSelectFilter}></div>
-                          <div className="aspect-square bg-gray-700 rounded-md cursor-pointer" onClick={handleSelectFilter}></div>
+                          {['Vintage', 'Bright', 'Dark', 'Blur', 'Sharp', 'Sepia'].map((filter) => (
+                            <div 
+                              key={filter}
+                              className={`aspect-square rounded-md cursor-pointer border-2 flex items-center justify-center text-xs ${selectedFilter === filter ? 'border-purple-300 bg-purple-100' : 'border-gray-200 bg-gray-100 hover:bg-gray-200'}`}
+                              onClick={() => handleSelectFilter(filter)}
+                            >
+                              {filter}
+                            </div>
+                          ))}
                         </div>
                       </div>
                       
                       <div className="mt-4">
-                        <h4 className="text-sm font-medium mb-2">Replace Shapes with GIFs</h4>
+                        <h4 className="text-sm font-medium mb-2">Add GIFs</h4>
                         <GifLibrary onGifSelect={handleGifSelect} />
                       </div>
                     </TabsContent>
 
+                    {/* Stickers tab */}
                     <TabsContent value="stickers" className="pt-4">
                       <StickerLibrary onStickerSelect={handleStickerSelect} />
                     </TabsContent>
                   </Tabs>
                   
                   <div className="pt-6 flex justify-between">
-                    <Button variant="outline" onClick={handleSaveTemplate}>
+                    <Button variant="outline">
                       <Save className="h-4 w-4 mr-2" />
-                      Save Template
+                      Save Project
                     </Button>
                     <Button onClick={handleExport} className="bg-purple-600 hover:bg-purple-700 text-white">
                       <Download className="h-4 w-4 mr-2" />
@@ -910,75 +1003,6 @@ const VideoEditing: React.FC = () => {
               </Card>
             </div>
           </div>
-          
-          {/* Timeline */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle>Timeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="relative overflow-x-auto">
-                <div className="min-w-full">
-                  <div className="h-8 mb-1 flex border-b">
-                    <div className="w-40 flex-shrink-0 border-r px-2 font-medium text-sm flex items-center">
-                      Elements
-                    </div>
-                    <div className="flex-grow relative">
-                      {/* Time markers */}
-                      <div className="absolute inset-0 flex">
-                        {[...Array(6)].map((_, i) => (
-                          <div key={i} className="flex-1 border-r text-xs text-gray-500 flex items-center justify-end pr-1">
-                            {i * 5}s
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Timeline rows */}
-                  {timelineElements.map((element) => (
-                    <div key={element.id} className="h-12 flex mb-1 group hover:bg-gray-50">
-                      <div className="w-40 flex-shrink-0 border-r px-2 flex items-center">
-                        <div className="w-6 h-6 rounded flex items-center justify-center mr-2 bg-gray-100">
-                          {element.type === 'video' && <FileVideo className="h-3 w-3" />}
-                          {element.type === 'image' && <Image className="h-3 w-3" />}
-                          {element.type === 'text' && <Type className="h-3 w-3" />}
-                        </div>
-                        <div className="overflow-hidden">
-                          <p className="text-sm truncate">{element.name}</p>
-                        </div>
-                      </div>
-                      <div className="flex-grow relative">
-                        {/* Element block */}
-                        <div 
-                          className={`absolute h-8 top-2 rounded ${
-                            element.type === 'video' ? 'bg-blue-100 border-blue-200' : 
-                            element.type === 'text' ? 'bg-green-100 border-green-200' : 
-                            'bg-purple-100 border-purple-200'
-                          } border flex items-center px-2 cursor-pointer group-hover:ring-1 ring-gray-400`}
-                          style={{ 
-                            left: '10%', 
-                            width: element.type === 'video' ? '25%' : '15%'
-                          }}
-                        >
-                          <span className="text-xs truncate">{element.name}</span>
-                          <span className="ml-auto text-xs opacity-70">{element.duration}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Add element row */}
-                  <div className="h-12 flex items-center justify-center border-t border-dashed">
-                    <Button variant="ghost" size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Element
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </DashboardLayout>
