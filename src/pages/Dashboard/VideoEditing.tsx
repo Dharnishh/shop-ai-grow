@@ -1,5 +1,4 @@
-
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +58,7 @@ const VideoEditing: React.FC = () => {
   const videoFileRef = useRef<HTMLInputElement>(null);
   const imageFileRef = useRef<HTMLInputElement>(null);
   const audioFileRef = useRef<HTMLInputElement>(null);
+  const videoPlayerRef = useRef<HTMLVideoElement>(null);
   
   // Template and editing state
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
@@ -67,26 +67,18 @@ const VideoEditing: React.FC = () => {
   const [selectedTabInEditor, setSelectedTabInEditor] = useState<string>("trim");
   
   // Media assets state
-  const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([
-    { id: "1", name: "intro_clip.mp4", type: "video", url: "", duration: "00:12", size: "720p" },
-    { id: "2", name: "product_demo.mp4", type: "video", url: "", duration: "00:25", size: "1080p" },
-    { id: "3", name: "background_music.mp3", type: "audio", url: "", duration: "01:42" },
-    { id: "4", name: "voice_over.mp3", type: "audio", url: "", duration: "00:35" },
-  ]);
+  const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
   
   // Video player state
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration] = useState(35);
+  const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(50);
   
   // Editing tools state
   const [textElements, setTextElements] = useState<Array<{id: string, text: string, style: string}>>([]);
-  const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([
-    { id: "1", name: "Background Music", type: "background", volume: 50, url: "" },
-    { id: "2", name: "Voice Over", type: "voiceover", volume: 80, url: "" }
-  ]);
+  const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
   const [selectedTransition, setSelectedTransition] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [trimStart, setTrimStart] = useState<number>(0);
@@ -125,57 +117,29 @@ const VideoEditing: React.FC = () => {
       dimensions: "1080x1920",
       type: "video",
       description: "Vertical format perfect for Instagram Stories"
-    },
-    { 
-      id: "4", 
-      title: "Restaurant Menu", 
-      category: "Business", 
-      thumbnail: "https://images.unsplash.com/photo-1495195134817-aeb325a55b65?w=500&h=280&auto=format&fit=crop",
-      dimensions: "1080p • 16:9",
-      type: "video",
-      description: "Showcase restaurant menu items with elegant transitions"
-    },
-    { 
-      id: "5", 
-      title: "Summer Collection", 
-      category: "Social Media", 
-      thumbnail: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&h=280&auto=format&fit=crop",
-      dimensions: "1080x1080",
-      type: "video",
-      description: "Square format video for Instagram feed posts"
-    },
-    { 
-      id: "6", 
-      title: "Service Overview", 
-      category: "Business", 
-      thumbnail: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&h=280&auto=format&fit=crop",
-      dimensions: "1080p • 16:9",
-      type: "video",
-      description: "Professional template to highlight business services"
-    },
-    { 
-      id: "7", 
-      title: "YouTube Tutorial", 
-      category: "Social Media", 
-      thumbnail: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&h=280&auto=format&fit=crop",
-      dimensions: "1080p • 16:9",
-      type: "video",
-      description: "Tutorial-style template with intro and sections"
-    },
-    { 
-      id: "8", 
-      title: "Quick TikTok", 
-      category: "Social Media", 
-      thumbnail: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=500&h=280&auto=format&fit=crop",
-      dimensions: "1080x1920",
-      type: "video",
-      description: "Fast-paced vertical video with trending effects"
-    },
+    }
   ];
   
   const filteredTemplates = activeCategory === "All" 
     ? templates 
     : templates.filter(template => template.category === activeCategory);
+
+  // Video player control functions
+  useEffect(() => {
+    const video = videoPlayerRef.current;
+    if (video) {
+      const updateTime = () => setCurrentTime(video.currentTime);
+      const updateDuration = () => setDuration(video.duration);
+      
+      video.addEventListener('timeupdate', updateTime);
+      video.addEventListener('loadedmetadata', updateDuration);
+      
+      return () => {
+        video.removeEventListener('timeupdate', updateTime);
+        video.removeEventListener('loadedmetadata', updateDuration);
+      };
+    }
+  }, [videoPreview]);
 
   // File upload handlers
   const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,6 +156,7 @@ const VideoEditing: React.FC = () => {
       };
       setMediaAssets(prev => [...prev, newAsset]);
       setVideoPreview(url);
+      setEditingMode(true);
       toast({
         title: "Video Uploaded",
         description: `${file.name} has been added to your media assets`,
@@ -246,10 +211,27 @@ const VideoEditing: React.FC = () => {
   };
 
   const handleDeleteAsset = (assetId: string) => {
+    const asset = mediaAssets.find(a => a.id === assetId);
+    if (asset && asset.url === videoPreview) {
+      setVideoPreview(null);
+      setIsPlaying(false);
+    }
     setMediaAssets(prev => prev.filter(asset => asset.id !== assetId));
     toast({
       title: "Asset Deleted",
       description: "Media asset has been removed",
+    });
+  };
+
+  const handleSelectAsset = (asset: MediaAsset) => {
+    if (asset.type === 'video') {
+      setVideoPreview(asset.url);
+      setIsPlaying(false);
+      setCurrentTime(0);
+    }
+    toast({
+      title: "Asset Selected",
+      description: `${asset.name} is now active in the preview`,
     });
   };
 
@@ -328,6 +310,14 @@ const VideoEditing: React.FC = () => {
     if (newStart >= trimEnd) {
       setTrimEnd(Math.min(100, newStart + 5));
     }
+    
+    // Apply trim to video player
+    if (videoPlayerRef.current && duration > 0) {
+      const startTime = (newStart / 100) * duration;
+      videoPlayerRef.current.currentTime = startTime;
+      setCurrentTime(startTime);
+    }
+    
     toast({
       title: "Trim Updated",
       description: `Video trimmed from ${newStart}% to ${trimEnd}%`,
@@ -348,30 +338,46 @@ const VideoEditing: React.FC = () => {
 
   // Video player controls
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-    toast({
-      title: isPlaying ? "Video Paused" : "Video Playing",
-      description: isPlaying ? "Video playback paused" : "Video playback started",
-    });
+    if (videoPlayerRef.current) {
+      if (isPlaying) {
+        videoPlayerRef.current.pause();
+      } else {
+        videoPlayerRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
   };
 
   const handleSeek = (value: number[]) => {
-    const newTime = (value[0] / 100) * duration;
-    setCurrentTime(newTime);
+    if (videoPlayerRef.current && duration > 0) {
+      const newTime = (value[0] / 100) * duration;
+      videoPlayerRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
   };
 
   const handleVolumeChange = (value: number[]) => {
-    setVolume(value[0]);
+    const newVolume = value[0];
+    setVolume(newVolume);
+    if (videoPlayerRef.current) {
+      videoPlayerRef.current.volume = newVolume / 100;
+    }
   };
 
   const handleSkipBack = () => {
-    const newTime = Math.max(0, currentTime - 10);
-    setCurrentTime(newTime);
+    if (videoPlayerRef.current) {
+      const newTime = Math.max(0, currentTime - 10);
+      videoPlayerRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
   };
 
   const handleSkipForward = () => {
-    const newTime = Math.min(duration, currentTime + 10);
-    setCurrentTime(newTime);
+    if (videoPlayerRef.current) {
+      const newTime = Math.min(duration, currentTime + 10);
+      videoPlayerRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
   };
 
   // Sticker and GIF handlers
@@ -492,7 +498,7 @@ const VideoEditing: React.FC = () => {
       }}>
         <TabsList className="mb-6">
           <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="editor" disabled={!editingMode && !selectedTemplate}>Video Editor</TabsTrigger>
+          <TabsTrigger value="editor" disabled={!editingMode && !selectedTemplate && !videoPreview}>Video Editor</TabsTrigger>
         </TabsList>
         
         <TabsContent value="templates" className="space-y-6">
@@ -574,7 +580,11 @@ const VideoEditing: React.FC = () => {
                     <TabsContent value="videos" className="pt-4">
                       <div className="space-y-2">
                         {mediaAssets.filter(asset => asset.type === 'video').map((asset) => (
-                          <div key={asset.id} className="p-3 border rounded-md flex items-center">
+                          <div 
+                            key={asset.id} 
+                            className={`p-3 border rounded-md flex items-center cursor-pointer hover:bg-gray-50 ${videoPreview === asset.url ? 'bg-blue-50 border-blue-300' : ''}`}
+                            onClick={() => handleSelectAsset(asset)}
+                          >
                             <div className="w-12 h-12 bg-gray-200 rounded mr-3 flex-shrink-0 flex items-center justify-center">
                               <FileVideo className="h-5 w-5 text-gray-500" />
                             </div>
@@ -585,7 +595,10 @@ const VideoEditing: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDeleteAsset(asset.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteAsset(asset.id);
+                              }}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -601,7 +614,7 @@ const VideoEditing: React.FC = () => {
                     <TabsContent value="images" className="pt-4">
                       <div className="grid grid-cols-2 gap-2">
                         {mediaAssets.filter(asset => asset.type === 'image').map((asset) => (
-                          <div key={asset.id} className="relative">
+                          <div key={asset.id} className="relative cursor-pointer" onClick={() => handleSelectAsset(asset)}>
                             <div className="aspect-square bg-gray-200 rounded-md flex items-center justify-center">
                               {asset.url ? (
                                 <img src={asset.url} alt={asset.name} className="w-full h-full object-cover rounded-md" />
@@ -613,7 +626,10 @@ const VideoEditing: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               className="absolute top-1 right-1"
-                              onClick={() => handleDeleteAsset(asset.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteAsset(asset.id);
+                              }}
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -629,7 +645,7 @@ const VideoEditing: React.FC = () => {
                     <TabsContent value="audio" className="pt-4">
                       <div className="space-y-2">
                         {mediaAssets.filter(asset => asset.type === 'audio').map((asset) => (
-                          <div key={asset.id} className="p-3 border rounded-md flex items-center">
+                          <div key={asset.id} className="p-3 border rounded-md flex items-center cursor-pointer hover:bg-gray-50" onClick={() => handleSelectAsset(asset)}>
                             <div className="w-10 h-10 bg-gray-200 rounded-full mr-3 flex-shrink-0 flex items-center justify-center">
                               <Music className="h-5 w-5 text-gray-500" />
                             </div>
@@ -640,7 +656,10 @@ const VideoEditing: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDeleteAsset(asset.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteAsset(asset.id);
+                              }}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -672,13 +691,18 @@ const VideoEditing: React.FC = () => {
                 <CardContent className="flex-grow flex flex-col">
                   <div className="flex-grow bg-black rounded-md flex items-center justify-center relative min-h-[300px]">
                     {videoPreview ? (
-                      <img 
-                        src={videoPreview} 
-                        alt="Video preview" 
+                      <video 
+                        ref={videoPlayerRef}
+                        src={videoPreview}
                         className="max-h-full max-w-full object-contain"
+                        onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
                       />
                     ) : (
-                      <Video className="h-16 w-16 text-white opacity-20" />
+                      <div className="text-white opacity-50 text-center">
+                        <Video className="h-16 w-16 mx-auto mb-4" />
+                        <p>Upload a video to get started</p>
+                      </div>
                     )}
                     
                     {/* Text overlays */}
@@ -711,10 +735,10 @@ const VideoEditing: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
                           onClick={() => handleDeleteSticker(index)}
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3 w-3 text-white" />
                         </Button>
                       </div>
                     ))}
@@ -739,10 +763,10 @@ const VideoEditing: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
                           onClick={() => handleDeleteGif(index)}
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3 w-3 text-white" />
                         </Button>
                       </div>
                     ))}
@@ -751,13 +775,13 @@ const VideoEditing: React.FC = () => {
                   {/* Video controls */}
                   <div className="flex items-center justify-between mt-4">
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={handleSkipBack}>
+                      <Button variant="outline" size="sm" onClick={handleSkipBack} disabled={!videoPreview}>
                         <SkipBack className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={handlePlayPause}>
+                      <Button variant="outline" size="sm" onClick={handlePlayPause} disabled={!videoPreview}>
                         {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                       </Button>
-                      <Button variant="outline" size="sm" onClick={handleSkipForward}>
+                      <Button variant="outline" size="sm" onClick={handleSkipForward} disabled={!videoPreview}>
                         <SkipForward className="h-4 w-4" />
                       </Button>
                       <div className="flex items-center gap-2 ml-4">
@@ -779,10 +803,11 @@ const VideoEditing: React.FC = () => {
                   {/* Progress bar */}
                   <div className="mt-4">
                     <Slider 
-                      value={[(currentTime / duration) * 100]} 
+                      value={duration > 0 ? [(currentTime / duration) * 100] : [0]} 
                       max={100} 
                       step={0.1}
                       onValueChange={handleSeek}
+                      disabled={!videoPreview || duration === 0}
                     />
                   </div>
                 </CardContent>
@@ -828,7 +853,6 @@ const VideoEditing: React.FC = () => {
                       </TabsTrigger>
                     </TabsList>
                     
-                    {/* Trim tab */}
                     <TabsContent value="trim" className="pt-4 space-y-4">
                       <div>
                         <div className="flex justify-between mb-2">
@@ -862,7 +886,6 @@ const VideoEditing: React.FC = () => {
                       </Button>
                     </TabsContent>
                     
-                    {/* Text tab */}
                     <TabsContent value="text" className="pt-4">
                       <div className="space-y-3">
                         <Button 
@@ -888,7 +911,6 @@ const VideoEditing: React.FC = () => {
                         </Button>
                       </div>
                       
-                      {/* Text elements list */}
                       {textElements.length > 0 && (
                         <div className="mt-4 space-y-2">
                           <h4 className="text-sm font-medium">Text Elements</h4>
@@ -912,7 +934,6 @@ const VideoEditing: React.FC = () => {
                       )}
                     </TabsContent>
                     
-                    {/* Audio tab */}
                     <TabsContent value="music" className="pt-4 space-y-4">
                       {audioTracks.map((track) => (
                         <div key={track.id} className="space-y-2">
@@ -945,7 +966,6 @@ const VideoEditing: React.FC = () => {
                       </Button>
                     </TabsContent>
                     
-                    {/* Effects tab */}
                     <TabsContent value="effects" className="pt-4">
                       <div>
                         <h4 className="text-sm font-medium mb-2">Transitions</h4>
@@ -983,7 +1003,6 @@ const VideoEditing: React.FC = () => {
                       </div>
                     </TabsContent>
 
-                    {/* Stickers tab */}
                     <TabsContent value="stickers" className="pt-4">
                       <StickerLibrary onStickerSelect={handleStickerSelect} />
                     </TabsContent>
