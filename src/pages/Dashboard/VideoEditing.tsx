@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -354,33 +353,6 @@ const VideoEditing: React.FC = () => {
     setAddedGifs(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Hidden file inputs for upload functionality
-  const hiddenFileInputs = (
-    <>
-      <input
-        type="file"
-        ref={videoFileRef}
-        accept="video/*"
-        onChange={handleVideoUpload}
-        className="hidden"
-      />
-      <input
-        type="file"
-        ref={imageFileRef}
-        accept="image/*"
-        onChange={handleImageUpload}
-        className="hidden"
-      />
-      <input
-        type="file"
-        ref={audioFileRef}
-        accept="audio/*"
-        onChange={handleAudioUpload}
-        className="hidden"
-      />
-    </>
-  );
-
   // Video player control functions
   useEffect(() => {
     const video = videoPlayerRef.current;
@@ -420,8 +392,8 @@ const VideoEditing: React.FC = () => {
       video.src = videoPreview;
       video.crossOrigin = 'anonymous';
       
-      await new Promise((resolve) => {
-        video.onloadedmetadata = resolve;
+      await new Promise<void>((resolve) => {
+        video.onloadedmetadata = () => resolve();
         video.load();
       });
 
@@ -437,8 +409,8 @@ const VideoEditing: React.FC = () => {
       const endTime = (trimEnd / 100) * video.duration;
       video.currentTime = startTime;
 
-      await new Promise((resolve) => {
-        video.onseeked = resolve;
+      await new Promise<void>((resolve) => {
+        video.onseeked = () => resolve();
       });
 
       if (ctx) {
@@ -469,6 +441,9 @@ const VideoEditing: React.FC = () => {
           }
         }
 
+        // Reset filter for overlays
+        ctx.filter = 'none';
+
         // Add text overlays
         textElements.forEach((element, index) => {
           ctx.fillStyle = 'white';
@@ -498,8 +473,9 @@ const VideoEditing: React.FC = () => {
           const img = new Image();
           img.crossOrigin = 'anonymous';
           
-          await new Promise((resolve) => {
-            img.onload = resolve;
+          await new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve(); // Continue even if image fails to load
             img.src = gif.preview;
           });
 
@@ -515,7 +491,7 @@ const VideoEditing: React.FC = () => {
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `edited-video-${Date.now()}.png`;
+          a.download = `edited-video-frame-${Date.now()}.png`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -624,6 +600,33 @@ const VideoEditing: React.FC = () => {
       handleExport();
     }, 1000);
   };
+
+  // Hidden file inputs for upload functionality
+  const hiddenFileInputs = (
+    <>
+      <input
+        type="file"
+        ref={videoFileRef}
+        accept="video/*"
+        onChange={handleVideoUpload}
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={imageFileRef}
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={audioFileRef}
+        accept="audio/*"
+        onChange={handleAudioUpload}
+        className="hidden"
+      />
+    </>
+  );
 
   return (
     <DashboardLayout pageTitle="Video Editing">
