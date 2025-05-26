@@ -24,7 +24,8 @@ import {
   SkipForward,
   Volume2,
   Upload,
-  Trash2
+  Trash2,
+  Clock
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,18 @@ interface DraggableElement {
   content: string | Sticker | GifItem;
   x: number;
   y: number;
+  startTime: number;
+  endTime: number;
+  scale: number;
+}
+
+interface TimelineElement {
+  id: string;
+  type: 'sticker' | 'gif' | 'text';
+  name: string;
+  startTime: number;
+  endTime: number;
+  track: number;
 }
 
 // Utility function to format time in MM:SS format
@@ -101,9 +114,10 @@ const VideoEditing: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [trimStart, setTrimStart] = useState<number>(0);
   const [trimEnd, setTrimEnd] = useState<number>(100);
-  const [addedStickers, setAddedStickers] = useState<DraggableElement[]>([]);
-  const [addedGifs, setAddedGifs] = useState<DraggableElement[]>([]);
-  const [draggedElement, setDraggedElement] = useState<string | null>(null);
+  const [addedElements, setAddedElements] = useState<DraggableElement[]>([]);
+  const [timelineElements, setTimelineElements] = useState<TimelineElement[]>([]);
+  const [isDragging, setIsDragging] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
   // Template categories and templates data
   const categories = ["All", "Business", "Story", "Promo", "Social Media"];
@@ -175,6 +189,14 @@ const VideoEditing: React.FC = () => {
       video.style.filter = 'none';
     }
   }, [selectedFilter]);
+
+  // Update visible elements based on current time
+  useEffect(() => {
+    setAddedElements(prev => prev.map(element => ({
+      ...element,
+      visible: currentTime >= element.startTime && currentTime <= element.endTime
+    })));
+  }, [currentTime]);
 
   // File upload handlers
   const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -308,6 +330,39 @@ const VideoEditing: React.FC = () => {
     }
   };
 
+  // Enhanced drag handlers
+  const handleMouseDown = (e: React.MouseEvent, elementId: string) => {
+    e.preventDefault();
+    const element = addedElements.find(el => el.id === elementId);
+    if (!element || !previewContainerRef.current) return;
+
+    const rect = previewContainerRef.current.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left - (element.x / 100) * rect.width;
+    const offsetY = e.clientY - rect.top - (element.y / 100) * rect.height;
+    
+    setIsDragging(elementId);
+    setDragOffset({ x: offsetX, y: offsetY });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !previewContainerRef.current) return;
+
+    const rect = previewContainerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
+    const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
+
+    setAddedElements(prev => prev.map(element => 
+      element.id === isDragging 
+        ? { ...element, x: Math.max(0, Math.min(90, x)), y: Math.max(0, Math.min(90, y)) }
+        : element
+    ));
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(null);
+    setDragOffset({ x: 0, y: 0 });
+  };
+
   // Trim handlers
   const handleTrimStartChange = (value: number[]) => {
     setTrimStart(value[0]);
@@ -319,14 +374,31 @@ const VideoEditing: React.FC = () => {
 
   // Text element handlers
   const handleAddText = (style: string) => {
-    const newText = {
+    const newElement: DraggableElement = {
       id: Date.now().toString(),
-      text: style === 'Title' ? 'Your Title Here' : 
+      type: 'text',
+      content: style === 'Title' ? 'Your Title Here' : 
             style === 'Subtitle' ? 'Your Subtitle Here' : 
             'Call to Action',
-      style: style
+      x: 20,
+      y: 20,
+      startTime: 0,
+      endTime: duration || 10,
+      scale: 1
     };
-    setTextElements(prev => [...prev, newText]);
+    
+    const newTimelineElement: TimelineElement = {
+      id: newElement.id,
+      type: 'text',
+      name: `${style} Text`,
+      startTime: 0,
+      endTime: duration || 10,
+      track: timelineElements.length
+    };
+    
+    setAddedElements(prev => [...prev, newElement]);
+    setTimelineElements(prev => [...prev, newTimelineElement]);
+    
     toast({
       title: "Text Added",
       description: `${style} has been added to your video`,
@@ -334,13 +406,14 @@ const VideoEditing: React.FC = () => {
   };
 
   const handleUpdateText = (id: string, newText: string) => {
-    setTextElements(prev => prev.map(element => 
-      element.id === id ? { ...element, text: newText } : element
+    setAddedElements(prev => prev.map(element => 
+      element.id === id && element.type === 'text' ? { ...element, content: newText } : element
     ));
   };
 
-  const handleDeleteText = (id: string) => {
-    setTextElements(prev => prev.filter(element => element.id !== id));
+  const handleDeleteElement = (id: string) => {
+    setAddedElements(prev => prev.filter(element => element.id !== id));
+    setTimelineElements(prev => prev.filter(element => element.id !== id));
   };
 
   // Audio track handlers
@@ -372,19 +445,34 @@ const VideoEditing: React.FC = () => {
     });
   };
 
-  // Enhanced sticker and GIF handlers with dragging
+  // Enhanced sticker and GIF handlers
   const handleStickerSelect = (sticker: Sticker) => {
     const newElement: DraggableElement = {
       id: Date.now().toString(),
       type: 'sticker',
       content: sticker,
       x: 20,
-      y: 20
+      y: 20,
+      startTime: currentTime,
+      endTime: Math.min(currentTime + 5, duration || 10),
+      scale: 1
     };
-    setAddedStickers(prev => [...prev, newElement]);
+    
+    const newTimelineElement: TimelineElement = {
+      id: newElement.id,
+      type: 'sticker',
+      name: sticker.name,
+      startTime: currentTime,
+      endTime: Math.min(currentTime + 5, duration || 10),
+      track: timelineElements.length
+    };
+    
+    setAddedElements(prev => [...prev, newElement]);
+    setTimelineElements(prev => [...prev, newTimelineElement]);
+    
     toast({
       title: "Sticker Added",
-      description: "Sticker has been added to your video. Drag to reposition!",
+      description: "Sticker has been added to your video timeline!",
     });
   };
 
@@ -394,54 +482,38 @@ const VideoEditing: React.FC = () => {
       type: 'gif',
       content: gif,
       x: 100,
-      y: 100
+      y: 100,
+      startTime: currentTime,
+      endTime: Math.min(currentTime + 3, duration || 10),
+      scale: 1
     };
-    setAddedGifs(prev => [...prev, newElement]);
+    
+    const newTimelineElement: TimelineElement = {
+      id: newElement.id,
+      type: 'gif',
+      name: gif.title,
+      startTime: currentTime,
+      endTime: Math.min(currentTime + 3, duration || 10),
+      track: timelineElements.length
+    };
+    
+    setAddedElements(prev => [...prev, newElement]);
+    setTimelineElements(prev => [...prev, newTimelineElement]);
+    
     toast({
       title: "GIF Added",
-      description: "GIF has been added to your video. Drag to reposition!",
+      description: "GIF has been added to your video timeline!",
     });
   };
 
-  // Drag handlers for elements
-  const handleDragStart = (elementId: string) => {
-    setDraggedElement(elementId);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (draggedElement && previewContainerRef.current) {
-      const rect = previewContainerRef.current.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-      // Update position for stickers
-      setAddedStickers(prev => prev.map(sticker => 
-        sticker.id === draggedElement 
-          ? { ...sticker, x: Math.max(0, Math.min(90, x)), y: Math.max(0, Math.min(90, y)) }
-          : sticker
-      ));
-
-      // Update position for GIFs
-      setAddedGifs(prev => prev.map(gif => 
-        gif.id === draggedElement 
-          ? { ...gif, x: Math.max(0, Math.min(90, x)), y: Math.max(0, Math.min(90, y)) }
-          : gif
-      ));
-    }
-    setDraggedElement(null);
-  };
-
-  const handleDeleteSticker = (id: string) => {
-    setAddedStickers(prev => prev.filter(sticker => sticker.id !== id));
-  };
-
-  const handleDeleteGif = (id: string) => {
-    setAddedGifs(prev => prev.filter(gif => gif.id !== id));
+  // Timeline handlers
+  const handleTimelineElementChange = (id: string, startTime: number, endTime: number) => {
+    setTimelineElements(prev => prev.map(element => 
+      element.id === id ? { ...element, startTime, endTime } : element
+    ));
+    setAddedElements(prev => prev.map(element => 
+      element.id === id ? { ...element, startTime, endTime } : element
+    ));
   };
 
   // Video player control functions
@@ -540,33 +612,36 @@ const VideoEditing: React.FC = () => {
         }
 
         // Add text overlays
-        textElements.forEach((element, index) => {
-          ctx.fillStyle = 'white';
-          ctx.strokeStyle = 'black';
-          ctx.lineWidth = 3;
-          ctx.font = element.style === 'Title' ? 'bold 48px Arial' : 
-                    element.style === 'Subtitle' ? 'bold 32px Arial' : '24px Arial';
-          
-          const x = 50 + (index * 20);
-          const y = 100 + (index * 60);
-          
-          ctx.strokeText(element.text, x, y);
-          ctx.fillText(element.text, x, y);
-        });
+        addedElements
+          .filter(element => element.type === 'text' && currentTime >= element.startTime && currentTime <= element.endTime)
+          .forEach((element, index) => {
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            ctx.font = '48px Arial';
+            
+            const x = (element.x / 100) * canvas.width;
+            const y = (element.y / 100) * canvas.height;
+            
+            ctx.strokeText(element.content as string, x, y);
+            ctx.fillText(element.content as string, x, y);
+          });
 
         // Add sticker overlays
-        addedStickers.forEach((element) => {
-          const sticker = element.content as Sticker;
-          ctx.font = '64px Arial';
-          const x = (element.x / 100) * canvas.width;
-          const y = (element.y / 100) * canvas.height;
-          ctx.fillText(sticker.url, x, y);
-        });
+        addedElements
+          .filter(element => element.type === 'sticker' && currentTime >= element.startTime && currentTime <= element.endTime)
+          .forEach((element) => {
+            const sticker = element.content as Sticker;
+            ctx.font = '64px Arial';
+            const x = (element.x / 100) * canvas.width;
+            const y = (element.y / 100) * canvas.height;
+            ctx.fillText(sticker.url, x, y);
+          });
 
         // Add GIF overlays
-        for (const element of addedGifs) {
+        for (const element of addedElements.filter(el => el.type === 'gif' && currentTime >= el.startTime && currentTime <= el.endTime)) {
           const gif = element.content as GifItem;
-          const img = new Image();
+          const img = document.createElement('img');
           img.crossOrigin = 'anonymous';
           
           try {
@@ -578,7 +653,7 @@ const VideoEditing: React.FC = () => {
 
             const x = (element.x / 100) * canvas.width;
             const y = (element.y / 100) * canvas.height;
-            ctx.drawImage(img, x, y, 80, 80);
+            ctx.drawImage(img, x, y, 80 * element.scale, 80 * element.scale);
           } catch (error) {
             console.log('Failed to load GIF image:', error);
           }
@@ -600,7 +675,7 @@ const VideoEditing: React.FC = () => {
 
           toast({
             title: "Video Export Complete!",
-            description: `Video exported with ${textElements.length} text elements, ${addedStickers.length} stickers, ${addedGifs.length} GIFs, and ${selectedFilter || 'no'} filter applied`,
+            description: `Video exported with ${addedElements.length} elements, ${selectedFilter || 'no'} filter applied`,
           });
         }
       }, 'image/png');
@@ -622,10 +697,9 @@ const VideoEditing: React.FC = () => {
       name: `Video Project ${new Date().toLocaleDateString()}`,
       timestamp: new Date().toISOString(),
       mediaAssets,
-      textElements,
+      addedElements,
+      timelineElements,
       audioTracks,
-      addedStickers,
-      addedGifs,
       selectedTransition,
       selectedFilter,
       trimStart,
@@ -643,63 +717,6 @@ const VideoEditing: React.FC = () => {
       title: "Project Saved",
       description: `Your project has been saved successfully`,
     });
-  };
-
-  // Load saved project function
-  const handleLoadProject = () => {
-    const savedProjects = JSON.parse(localStorage.getItem('videoProjects') || '[]');
-    if (savedProjects.length > 0) {
-      const latestProject = savedProjects[savedProjects.length - 1];
-      
-      setMediaAssets(latestProject.mediaAssets || []);
-      setTextElements(latestProject.textElements || []);
-      setAudioTracks(latestProject.audioTracks || []);
-      setAddedStickers(latestProject.addedStickers || []);
-      setAddedGifs(latestProject.addedGifs || []);
-      setSelectedTransition(latestProject.selectedTransition);
-      setSelectedFilter(latestProject.selectedFilter);
-      setTrimStart(latestProject.trimStart || 0);
-      setTrimEnd(latestProject.trimEnd || 100);
-      setVideoPreview(latestProject.videoPreview);
-      setCustomTemplate(latestProject.customTemplate);
-      
-      toast({
-        title: "Project Loaded",
-        description: "Your latest project has been loaded",
-      });
-    } else {
-      toast({
-        title: "No Saved Projects",
-        description: "No saved projects found",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Enhanced export options
-  const handleExportOptions = () => {
-    if (!videoPreview) {
-      toast({
-        title: "No Content to Export",
-        description: "Please upload a video or select a template first",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Show export quality options
-    const qualities = ['720p', '1080p', '4K'];
-    const selectedQuality = '1080p'; // Default
-    
-    toast({
-      title: "Export Settings",
-      description: `Exporting in ${selectedQuality} quality with all applied effects`,
-    });
-    
-    // Trigger the actual export
-    setTimeout(() => {
-      handleExport();
-    }, 1000);
   };
 
   // Hidden file inputs for upload functionality
@@ -979,8 +996,8 @@ const VideoEditing: React.FC = () => {
                   <div 
                     ref={previewContainerRef}
                     className="flex-grow bg-black rounded-md flex items-center justify-center relative min-h-[300px]"
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
                   >
                     {videoPreview ? (
                       <video 
@@ -997,81 +1014,93 @@ const VideoEditing: React.FC = () => {
                       </div>
                     )}
                     
-                    {/* Text overlays */}
-                    {textElements.map((element, index) => (
-                      <div 
-                        key={element.id}
-                        className="absolute text-white cursor-move"
-                        style={{ 
-                          top: `${20 + (index * 8)}%`, 
-                          left: `${20 + (index * 5)}%`,
-                          fontSize: element.style === 'Title' ? '24px' : '16px',
-                          fontWeight: element.style === 'Title' ? 'bold' : 'normal'
-                        }}
-                      >
-                        {element.text}
-                      </div>
-                    ))}
-                    
-                    {/* Draggable sticker overlays */}
-                    {addedStickers.map((element) => {
-                      const sticker = element.content as Sticker;
-                      return (
-                        <div 
-                          key={element.id}
-                          className="absolute text-4xl cursor-move group"
-                          style={{ 
-                            top: `${element.y}%`, 
-                            left: `${element.x}%`
-                          }}
-                          draggable
-                          onDragStart={() => handleDragStart(element.id)}
-                        >
-                          {sticker.url}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
-                            onClick={() => handleDeleteSticker(element.id)}
-                          >
-                            <Trash2 className="h-3 w-3 text-white" />
-                          </Button>
-                        </div>
-                      );
-                    })}
-                    
-                    {/* Draggable GIF overlays */}
-                    {addedGifs.map((element) => {
-                      const gif = element.content as GifItem;
-                      return (
-                        <div 
-                          key={element.id}
-                          className="absolute cursor-move group"
-                          style={{ 
-                            top: `${element.y}%`, 
-                            left: `${element.x}%`,
-                            width: '80px',
-                            height: '80px'
-                          }}
-                          draggable
-                          onDragStart={() => handleDragStart(element.id)}
-                        >
-                          <img 
-                            src={gif.preview} 
-                            alt={gif.title}
-                            className="w-full h-full object-cover rounded"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
-                            onClick={() => handleDeleteGif(element.id)}
-                          >
-                            <Trash2 className="h-3 w-3 text-white" />
-                          </Button>
-                        </div>
-                      );
-                    })}
+                    {/* Dynamic element overlays */}
+                    {addedElements
+                      .filter(element => currentTime >= element.startTime && currentTime <= element.endTime)
+                      .map((element) => {
+                        if (element.type === 'text') {
+                          return (
+                            <div 
+                              key={element.id}
+                              className="absolute text-white cursor-move select-none"
+                              style={{ 
+                                top: `${element.y}%`, 
+                                left: `${element.x}%`,
+                                fontSize: '24px',
+                                fontWeight: 'bold',
+                                textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                                transform: `scale(${element.scale})`
+                              }}
+                              onMouseDown={(e) => handleMouseDown(e, element.id)}
+                            >
+                              {element.content as string}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="absolute -top-2 -right-2 opacity-0 hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
+                                onClick={() => handleDeleteElement(element.id)}
+                              >
+                                <Trash2 className="h-3 w-3 text-white" />
+                              </Button>
+                            </div>
+                          );
+                        } else if (element.type === 'sticker') {
+                          const sticker = element.content as Sticker;
+                          return (
+                            <div 
+                              key={element.id}
+                              className="absolute text-4xl cursor-move group select-none"
+                              style={{ 
+                                top: `${element.y}%`, 
+                                left: `${element.x}%`,
+                                transform: `scale(${element.scale})`
+                              }}
+                              onMouseDown={(e) => handleMouseDown(e, element.id)}
+                            >
+                              {sticker.url}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
+                                onClick={() => handleDeleteElement(element.id)}
+                              >
+                                <Trash2 className="h-3 w-3 text-white" />
+                              </Button>
+                            </div>
+                          );
+                        } else if (element.type === 'gif') {
+                          const gif = element.content as GifItem;
+                          return (
+                            <div 
+                              key={element.id}
+                              className="absolute cursor-move group select-none"
+                              style={{ 
+                                top: `${element.y}%`, 
+                                left: `${element.x}%`,
+                                width: `${80 * element.scale}px`,
+                                height: `${80 * element.scale}px`
+                              }}
+                              onMouseDown={(e) => handleMouseDown(e, element.id)}
+                            >
+                              <img 
+                                src={gif.preview} 
+                                alt={gif.title}
+                                className="w-full h-full object-cover rounded"
+                                draggable={false}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
+                                onClick={() => handleDeleteElement(element.id)}
+                              >
+                                <Trash2 className="h-3 w-3 text-white" />
+                              </Button>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
                   </div>
                   
                   {/* Video controls */}
@@ -1112,6 +1141,35 @@ const VideoEditing: React.FC = () => {
                       disabled={!videoPreview || duration === 0}
                     />
                   </div>
+                  
+                  {/* Elements Timeline */}
+                  {timelineElements.length > 0 && (
+                    <div className="mt-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-medium">Elements Timeline</h4>
+                        <Clock className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <div className="bg-gray-100 rounded-md p-3 max-h-32 overflow-y-auto">
+                        {timelineElements.map((element) => (
+                          <div key={element.id} className="flex items-center justify-between mb-2 p-2 bg-white rounded text-xs">
+                            <span className="font-medium">{element.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span>{formatTime(element.startTime)}</span>
+                              <span>-</span>
+                              <span>{formatTime(element.endTime)}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteElement(element.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -1209,20 +1267,20 @@ const VideoEditing: React.FC = () => {
                         </Button>
                       </div>
                       
-                      {textElements.length > 0 && (
+                      {addedElements.filter(el => el.type === 'text').length > 0 && (
                         <div className="mt-4 space-y-2">
                           <h4 className="text-sm font-medium">Text Elements</h4>
-                          {textElements.map((element) => (
+                          {addedElements.filter(el => el.type === 'text').map((element) => (
                             <div key={element.id} className="flex items-center gap-2">
                               <Input 
-                                value={element.text} 
+                                value={element.content as string} 
                                 onChange={(e) => handleUpdateText(element.id, e.target.value)}
                                 className="flex-grow"
                               />
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDeleteText(element.id)}
+                                onClick={() => handleDeleteElement(element.id)}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
