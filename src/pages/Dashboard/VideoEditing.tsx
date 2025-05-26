@@ -53,6 +53,14 @@ interface AudioTrack {
   url: string;
 }
 
+// Utility function to format time in MM:SS format
+const formatTime = (seconds: number): string => {
+  if (isNaN(seconds) || seconds < 0) return "00:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
 const VideoEditing: React.FC = () => {
   const { toast } = useToast();
   const videoFileRef = useRef<HTMLInputElement>(null);
@@ -123,6 +131,33 @@ const VideoEditing: React.FC = () => {
   const filteredTemplates = activeCategory === "All" 
     ? templates 
     : templates.filter(template => template.category === activeCategory);
+
+  // Hidden file inputs for upload functionality
+  const hiddenFileInputs = (
+    <>
+      <input
+        type="file"
+        ref={videoFileRef}
+        accept="video/*"
+        onChange={handleVideoUpload}
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={imageFileRef}
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={audioFileRef}
+        accept="audio/*"
+        onChange={handleAudioUpload}
+        className="hidden"
+      />
+    </>
+  );
 
   // Video player control functions
   useEffect(() => {
