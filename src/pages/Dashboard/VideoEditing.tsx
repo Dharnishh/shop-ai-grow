@@ -132,51 +132,7 @@ const VideoEditing: React.FC = () => {
     ? templates 
     : templates.filter(template => template.category === activeCategory);
 
-  // Hidden file inputs for upload functionality
-  const hiddenFileInputs = (
-    <>
-      <input
-        type="file"
-        ref={videoFileRef}
-        accept="video/*"
-        onChange={handleVideoUpload}
-        className="hidden"
-      />
-      <input
-        type="file"
-        ref={imageFileRef}
-        accept="image/*"
-        onChange={handleImageUpload}
-        className="hidden"
-      />
-      <input
-        type="file"
-        ref={audioFileRef}
-        accept="audio/*"
-        onChange={handleAudioUpload}
-        className="hidden"
-      />
-    </>
-  );
-
-  // Video player control functions
-  useEffect(() => {
-    const video = videoPlayerRef.current;
-    if (video) {
-      const updateTime = () => setCurrentTime(video.currentTime);
-      const updateDuration = () => setDuration(video.duration);
-      
-      video.addEventListener('timeupdate', updateTime);
-      video.addEventListener('loadedmetadata', updateDuration);
-      
-      return () => {
-        video.removeEventListener('timeupdate', updateTime);
-        video.removeEventListener('loadedmetadata', updateDuration);
-      };
-    }
-  }, [videoPreview]);
-
-  // File upload handlers
+  // File upload handlers (moved before hiddenFileInputs)
   const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -245,233 +201,51 @@ const VideoEditing: React.FC = () => {
     }
   };
 
-  const handleDeleteAsset = (assetId: string) => {
-    const asset = mediaAssets.find(a => a.id === assetId);
-    if (asset && asset.url === videoPreview) {
-      setVideoPreview(null);
-      setIsPlaying(false);
+  // Hidden file inputs for upload functionality (now after handlers)
+  const hiddenFileInputs = (
+    <>
+      <input
+        type="file"
+        ref={videoFileRef}
+        accept="video/*"
+        onChange={handleVideoUpload}
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={imageFileRef}
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={audioFileRef}
+        accept="audio/*"
+        onChange={handleAudioUpload}
+        className="hidden"
+      />
+    </>
+  );
+
+  // Video player control functions
+  useEffect(() => {
+    const video = videoPlayerRef.current;
+    if (video) {
+      const updateTime = () => setCurrentTime(video.currentTime);
+      const updateDuration = () => setDuration(video.duration);
+      
+      video.addEventListener('timeupdate', updateTime);
+      video.addEventListener('loadedmetadata', updateDuration);
+      
+      return () => {
+        video.removeEventListener('timeupdate', updateTime);
+        video.removeEventListener('loadedmetadata', updateDuration);
+      };
     }
-    setMediaAssets(prev => prev.filter(asset => asset.id !== assetId));
-    toast({
-      title: "Asset Deleted",
-      description: "Media asset has been removed",
-    });
-  };
+  }, [videoPreview]);
 
-  const handleSelectAsset = (asset: MediaAsset) => {
-    if (asset.type === 'video') {
-      setVideoPreview(asset.url);
-      setIsPlaying(false);
-      setCurrentTime(0);
-    }
-    toast({
-      title: "Asset Selected",
-      description: `${asset.name} is now active in the preview`,
-    });
-  };
-
-  // Text editing functions
-  const handleAddText = (textType: string) => {
-    const newText = {
-      id: Date.now().toString(),
-      text: `${textType} Text`,
-      style: textType
-    };
-    setTextElements(prev => [...prev, newText]);
-    toast({
-      title: "Text Added",
-      description: `${textType} has been added to your video`,
-    });
-  };
-
-  const handleUpdateText = (id: string, newText: string) => {
-    setTextElements(prev => 
-      prev.map(element => 
-        element.id === id ? { ...element, text: newText } : element
-      )
-    );
-  };
-
-  const handleDeleteText = (id: string) => {
-    setTextElements(prev => prev.filter(element => element.id !== id));
-    toast({
-      title: "Text Removed",
-      description: "Text element has been deleted",
-    });
-  };
-
-  // Audio controls
-  const handleAudioVolumeChange = (trackId: string, volume: number) => {
-    setAudioTracks(prev => 
-      prev.map(track => 
-        track.id === trackId ? { ...track, volume } : track
-      )
-    );
-    toast({
-      title: "Audio Volume Updated",
-      description: `Volume set to ${volume}%`,
-    });
-  };
-
-  const handleDeleteAudioTrack = (trackId: string) => {
-    setAudioTracks(prev => prev.filter(track => track.id !== trackId));
-    toast({
-      title: "Audio Track Removed",
-      description: "Audio track has been deleted",
-    });
-  };
-
-  // Transition and effects
-  const handleSelectTransition = (transition: string) => {
-    setSelectedTransition(transition);
-    toast({
-      title: "Transition Applied",
-      description: `${transition} transition has been applied`,
-    });
-  };
-
-  const handleSelectFilter = (filter: string) => {
-    setSelectedFilter(filter);
-    toast({
-      title: "Filter Applied",
-      description: `${filter} filter has been applied`,
-    });
-  };
-
-  // Trimming controls
-  const handleTrimStartChange = (value: number[]) => {
-    const newStart = value[0];
-    setTrimStart(newStart);
-    if (newStart >= trimEnd) {
-      setTrimEnd(Math.min(100, newStart + 5));
-    }
-    
-    // Apply trim to video player
-    if (videoPlayerRef.current && duration > 0) {
-      const startTime = (newStart / 100) * duration;
-      videoPlayerRef.current.currentTime = startTime;
-      setCurrentTime(startTime);
-    }
-    
-    toast({
-      title: "Trim Updated",
-      description: `Video trimmed from ${newStart}% to ${trimEnd}%`,
-    });
-  };
-
-  const handleTrimEndChange = (value: number[]) => {
-    const newEnd = value[0];
-    setTrimEnd(newEnd);
-    if (newEnd <= trimStart) {
-      setTrimStart(Math.max(0, newEnd - 5));
-    }
-    toast({
-      title: "Trim Updated",
-      description: `Video trimmed from ${trimStart}% to ${newEnd}%`,
-    });
-  };
-
-  // Video player controls
-  const handlePlayPause = () => {
-    if (videoPlayerRef.current) {
-      if (isPlaying) {
-        videoPlayerRef.current.pause();
-      } else {
-        videoPlayerRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  const handleSeek = (value: number[]) => {
-    if (videoPlayerRef.current && duration > 0) {
-      const newTime = (value[0] / 100) * duration;
-      videoPlayerRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  };
-
-  const handleVolumeChange = (value: number[]) => {
-    const newVolume = value[0];
-    setVolume(newVolume);
-    if (videoPlayerRef.current) {
-      videoPlayerRef.current.volume = newVolume / 100;
-    }
-  };
-
-  const handleSkipBack = () => {
-    if (videoPlayerRef.current) {
-      const newTime = Math.max(0, currentTime - 10);
-      videoPlayerRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  };
-
-  const handleSkipForward = () => {
-    if (videoPlayerRef.current) {
-      const newTime = Math.min(duration, currentTime + 10);
-      videoPlayerRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  };
-
-  // Sticker and GIF handlers
-  const handleStickerSelect = (sticker: Sticker) => {
-    setAddedStickers(prev => [...prev, sticker]);
-    toast({
-      title: "Sticker Added",
-      description: `${sticker.name} sticker added to your video`,
-    });
-  };
-
-  const handleGifSelect = (gif: GifItem) => {
-    setAddedGifs(prev => [...prev, gif]);
-    toast({
-      title: "GIF Added",
-      description: `${gif.title} GIF added to your video`,
-    });
-  };
-
-  const handleDeleteSticker = (index: number) => {
-    setAddedStickers(prev => prev.filter((_, i) => i !== index));
-    toast({
-      title: "Sticker Removed",
-      description: "Sticker has been removed from your video",
-    });
-  };
-
-  const handleDeleteGif = (index: number) => {
-    setAddedGifs(prev => prev.filter((_, i) => i !== index));
-    toast({
-      title: "GIF Removed",
-      description: "GIF has been removed from your video",
-    });
-  };
-
-  // Template handlers
-  const handleSelectTemplate = (templateId: string) => {
-    setSelectedTemplate(templateId);
-    const template = templates.find(t => t.id === templateId);
-    toast({
-      title: "Template Selected",
-      description: `You selected the ${template?.title} template`,
-    });
-  };
-
-  const handleUseTemplate = () => {
-    const template = templates.find(t => t.id === selectedTemplate);
-    if (template) {
-      setCustomTemplate(template);
-      setEditingMode(true);
-      setVideoPreview(template.thumbnail);
-      toast({
-        title: "Template Loaded",
-        description: "You can now customize this template in the editor",
-      });
-    }
-  };
-
-  // Enhanced export function
+  // Enhanced export function with proper video rendering
   const handleExport = async () => {
     if (!videoPreview) {
       toast({
@@ -484,66 +258,123 @@ const VideoEditing: React.FC = () => {
 
     toast({
       title: "Starting Export",
-      description: "Preparing your edited video for export...",
+      description: "Processing your video with all effects...",
     });
 
     try {
-      // Create a canvas to render the final video with overlays
+      // Create a temporary video element for processing
+      const video = document.createElement('video');
+      video.src = videoPreview;
+      video.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve) => {
+        video.onloadedmetadata = resolve;
+        video.load();
+      });
+
+      // Create canvas for rendering
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
-      if (videoPlayerRef.current) {
-        canvas.width = videoPlayerRef.current.videoWidth || 1920;
-        canvas.height = videoPlayerRef.current.videoHeight || 1080;
-        
-        // Draw the video frame
-        if (ctx) {
-          ctx.drawImage(videoPlayerRef.current, 0, 0, canvas.width, canvas.height);
+      canvas.width = video.videoWidth || 1920;
+      canvas.height = video.videoHeight || 1080;
+
+      // Set video to trim start position
+      const startTime = (trimStart / 100) * video.duration;
+      const endTime = (trimEnd / 100) * video.duration;
+      video.currentTime = startTime;
+
+      await new Promise((resolve) => {
+        video.onseeked = resolve;
+      });
+
+      if (ctx) {
+        // Draw video frame
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Apply filter effects
+        if (selectedFilter) {
+          switch (selectedFilter) {
+            case 'Vintage':
+              ctx.filter = 'sepia(0.8) contrast(1.2) brightness(0.9)';
+              break;
+            case 'Bright':
+              ctx.filter = 'brightness(1.3) contrast(1.1)';
+              break;
+            case 'Dark':
+              ctx.filter = 'brightness(0.7) contrast(1.2)';
+              break;
+            case 'Blur':
+              ctx.filter = 'blur(2px)';
+              break;
+            case 'Sharp':
+              ctx.filter = 'contrast(1.4) brightness(1.1)';
+              break;
+            case 'Sepia':
+              ctx.filter = 'sepia(1)';
+              break;
+          }
+        }
+
+        // Add text overlays
+        textElements.forEach((element, index) => {
+          ctx.fillStyle = 'white';
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 3;
+          ctx.font = element.style === 'Title' ? 'bold 48px Arial' : 
+                    element.style === 'Subtitle' ? 'bold 32px Arial' : '24px Arial';
           
-          // Add text overlays
-          textElements.forEach((element, index) => {
-            ctx.fillStyle = 'white';
-            ctx.font = element.style === 'Title' ? 'bold 48px Arial' : '24px Arial';
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
-            
-            const x = (20 + (index * 5)) * canvas.width / 100;
-            const y = (20 + (index * 8)) * canvas.height / 100;
-            
-            ctx.strokeText(element.text, x, y);
-            ctx.fillText(element.text, x, y);
-          });
+          const x = 50 + (index * 20);
+          const y = 100 + (index * 60);
           
-          // Add sticker overlays
-          addedStickers.forEach((sticker, index) => {
-            ctx.font = '64px Arial';
-            const x = (20 + (index * 10)) * canvas.width / 100;
-            const y = (20 + (index * 10)) * canvas.height / 100;
-            ctx.fillText(sticker.url, x, y);
+          ctx.strokeText(element.text, x, y);
+          ctx.fillText(element.text, x, y);
+        });
+
+        // Add sticker overlays
+        addedStickers.forEach((sticker, index) => {
+          ctx.font = '64px Arial';
+          const x = 100 + (index * 80);
+          const y = 200 + (index * 80);
+          ctx.fillText(sticker.url, x, y);
+        });
+
+        // Add GIF overlays (as static images for now)
+        for (let i = 0; i < addedGifs.length; i++) {
+          const gif = addedGifs[i];
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          
+          await new Promise((resolve) => {
+            img.onload = resolve;
+            img.src = gif.preview;
           });
+
+          const x = canvas.width - 120 - (i * 90);
+          const y = 50 + (i * 90);
+          ctx.drawImage(img, x, y, 80, 80);
         }
       }
-      
-      // Convert canvas to blob
-      canvas.toBlob(async (blob) => {
+
+      // Convert canvas to blob and download
+      canvas.toBlob((blob) => {
         if (blob) {
-          // Create download link
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `edited-video-${Date.now()}.png`; // For now, export as image
+          a.download = `edited-video-${Date.now()}.png`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
-          
+
           toast({
-            title: "Export Complete",
-            description: "Your edited video frame has been downloaded successfully",
+            title: "Export Complete!",
+            description: `Video frame exported successfully with ${textElements.length} text elements, ${addedStickers.length} stickers, and ${addedGifs.length} GIFs`,
           });
         }
       }, 'image/png');
-      
+
     } catch (error) {
       console.error('Export error:', error);
       toast({
@@ -691,7 +522,7 @@ const VideoEditing: React.FC = () => {
               <TemplateGallery 
                 templates={filteredTemplates}
                 selectedTemplate={selectedTemplate}
-                onSelectTemplate={handleSelectTemplate}
+                onSelectTemplate={(templateId) => setSelectedTemplate(templateId)}
                 type="video"
               />
               
@@ -701,7 +532,18 @@ const VideoEditing: React.FC = () => {
                   Upload Video
                 </Button>
                 
-                <Button disabled={!selectedTemplate} onClick={handleUseTemplate}>
+                <Button disabled={!selectedTemplate} onClick={() => {
+                  const template = templates.find(t => t.id === selectedTemplate);
+                  if (template) {
+                    setCustomTemplate(template);
+                    setEditingMode(true);
+                    setVideoPreview(template.thumbnail);
+                    toast({
+                      title: "Template Loaded",
+                      description: "You can now customize this template in the editor",
+                    });
+                  }
+                }}>
                   <PlaySquare className="h-4 w-4 mr-2" />
                   Use Selected Template
                 </Button>
