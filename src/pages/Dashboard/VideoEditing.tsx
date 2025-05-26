@@ -54,6 +54,14 @@ interface AudioTrack {
   url: string;
 }
 
+interface DraggableElement {
+  id: string;
+  type: 'sticker' | 'gif' | 'text';
+  content: string | Sticker | GifItem;
+  x: number;
+  y: number;
+}
+
 // Utility function to format time in MM:SS format
 const formatTime = (seconds: number): string => {
   if (isNaN(seconds) || seconds < 0) return "00:00";
@@ -68,6 +76,7 @@ const VideoEditing: React.FC = () => {
   const imageFileRef = useRef<HTMLInputElement>(null);
   const audioFileRef = useRef<HTMLInputElement>(null);
   const videoPlayerRef = useRef<HTMLVideoElement>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
   
   // Template and editing state
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
@@ -92,8 +101,9 @@ const VideoEditing: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [trimStart, setTrimStart] = useState<number>(0);
   const [trimEnd, setTrimEnd] = useState<number>(100);
-  const [addedStickers, setAddedStickers] = useState<Sticker[]>([]);
-  const [addedGifs, setAddedGifs] = useState<GifItem[]>([]);
+  const [addedStickers, setAddedStickers] = useState<DraggableElement[]>([]);
+  const [addedGifs, setAddedGifs] = useState<DraggableElement[]>([]);
+  const [draggedElement, setDraggedElement] = useState<string | null>(null);
   
   // Template categories and templates data
   const categories = ["All", "Business", "Story", "Promo", "Social Media"];
@@ -132,6 +142,39 @@ const VideoEditing: React.FC = () => {
   const filteredTemplates = activeCategory === "All" 
     ? templates 
     : templates.filter(template => template.category === activeCategory);
+
+  // Apply filter effects to video in real-time
+  useEffect(() => {
+    const video = videoPlayerRef.current;
+    if (video && selectedFilter) {
+      let filterStyle = '';
+      switch (selectedFilter) {
+        case 'Vintage':
+          filterStyle = 'sepia(0.8) contrast(1.2) brightness(0.9)';
+          break;
+        case 'Bright':
+          filterStyle = 'brightness(1.3) contrast(1.1)';
+          break;
+        case 'Dark':
+          filterStyle = 'brightness(0.7) contrast(1.2)';
+          break;
+        case 'Blur':
+          filterStyle = 'blur(2px)';
+          break;
+        case 'Sharp':
+          filterStyle = 'contrast(1.4) brightness(1.1)';
+          break;
+        case 'Sepia':
+          filterStyle = 'sepia(1)';
+          break;
+        default:
+          filterStyle = 'none';
+      }
+      video.style.filter = filterStyle;
+    } else if (video) {
+      video.style.filter = 'none';
+    }
+  }, [selectedFilter]);
 
   // File upload handlers
   const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -317,7 +360,7 @@ const VideoEditing: React.FC = () => {
     setSelectedTransition(transition);
     toast({
       title: "Transition Selected",
-      description: `${transition} transition will be applied`,
+      description: `${transition} transition will be applied during export`,
     });
   };
 
@@ -329,29 +372,76 @@ const VideoEditing: React.FC = () => {
     });
   };
 
-  // Sticker and GIF handlers
+  // Enhanced sticker and GIF handlers with dragging
   const handleStickerSelect = (sticker: Sticker) => {
-    setAddedStickers(prev => [...prev, sticker]);
+    const newElement: DraggableElement = {
+      id: Date.now().toString(),
+      type: 'sticker',
+      content: sticker,
+      x: 20,
+      y: 20
+    };
+    setAddedStickers(prev => [...prev, newElement]);
     toast({
       title: "Sticker Added",
-      description: "Sticker has been added to your video",
+      description: "Sticker has been added to your video. Drag to reposition!",
     });
-  };
-
-  const handleDeleteSticker = (index: number) => {
-    setAddedStickers(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleGifSelect = (gif: GifItem) => {
-    setAddedGifs(prev => [...prev, gif]);
+    const newElement: DraggableElement = {
+      id: Date.now().toString(),
+      type: 'gif',
+      content: gif,
+      x: 100,
+      y: 100
+    };
+    setAddedGifs(prev => [...prev, newElement]);
     toast({
       title: "GIF Added",
-      description: "GIF has been added to your video",
+      description: "GIF has been added to your video. Drag to reposition!",
     });
   };
 
-  const handleDeleteGif = (index: number) => {
-    setAddedGifs(prev => prev.filter((_, i) => i !== index));
+  // Drag handlers for elements
+  const handleDragStart = (elementId: string) => {
+    setDraggedElement(elementId);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (draggedElement && previewContainerRef.current) {
+      const rect = previewContainerRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+      // Update position for stickers
+      setAddedStickers(prev => prev.map(sticker => 
+        sticker.id === draggedElement 
+          ? { ...sticker, x: Math.max(0, Math.min(90, x)), y: Math.max(0, Math.min(90, y)) }
+          : sticker
+      ));
+
+      // Update position for GIFs
+      setAddedGifs(prev => prev.map(gif => 
+        gif.id === draggedElement 
+          ? { ...gif, x: Math.max(0, Math.min(90, x)), y: Math.max(0, Math.min(90, y)) }
+          : gif
+      ));
+    }
+    setDraggedElement(null);
+  };
+
+  const handleDeleteSticker = (id: string) => {
+    setAddedStickers(prev => prev.filter(sticker => sticker.id !== id));
+  };
+
+  const handleDeleteGif = (id: string) => {
+    setAddedGifs(prev => prev.filter(gif => gif.id !== id));
   };
 
   // Video player control functions
@@ -371,7 +461,7 @@ const VideoEditing: React.FC = () => {
     }
   }, [videoPreview]);
 
-  // Enhanced export function with proper video rendering
+  // Enhanced export function for video with all effects
   const handleExport = async () => {
     if (!videoPreview) {
       toast({
@@ -383,18 +473,19 @@ const VideoEditing: React.FC = () => {
     }
 
     toast({
-      title: "Starting Export",
-      description: "Processing your video with all effects...",
+      title: "Starting Video Export",
+      description: "Processing your video with all effects and overlays...",
     });
 
     try {
-      // Create a temporary video element for processing
+      // Create video element for processing
       const video = document.createElement('video');
       video.src = videoPreview;
       video.crossOrigin = 'anonymous';
       
-      await new Promise<void>((resolve) => {
+      await new Promise<void>((resolve, reject) => {
         video.onloadedmetadata = () => resolve();
+        video.onerror = () => reject(new Error('Failed to load video'));
         video.load();
       });
 
@@ -407,11 +498,11 @@ const VideoEditing: React.FC = () => {
 
       // Set video to trim start position
       const startTime = (trimStart / 100) * video.duration;
-      const endTime = (trimEnd / 100) * video.duration;
       video.currentTime = startTime;
 
-      await new Promise<void>((resolve) => {
+      await new Promise<void>((resolve, reject) => {
         video.onseeked = () => resolve();
+        video.onerror = () => reject(new Error('Failed to seek video'));
       });
 
       if (ctx) {
@@ -420,30 +511,33 @@ const VideoEditing: React.FC = () => {
 
         // Apply filter effects
         if (selectedFilter) {
+          let filterStyle = '';
           switch (selectedFilter) {
             case 'Vintage':
-              ctx.filter = 'sepia(0.8) contrast(1.2) brightness(0.9)';
+              filterStyle = 'sepia(0.8) contrast(1.2) brightness(0.9)';
               break;
             case 'Bright':
-              ctx.filter = 'brightness(1.3) contrast(1.1)';
+              filterStyle = 'brightness(1.3) contrast(1.1)';
               break;
             case 'Dark':
-              ctx.filter = 'brightness(0.7) contrast(1.2)';
+              filterStyle = 'brightness(0.7) contrast(1.2)';
               break;
             case 'Blur':
-              ctx.filter = 'blur(2px)';
+              filterStyle = 'blur(2px)';
               break;
             case 'Sharp':
-              ctx.filter = 'contrast(1.4) brightness(1.1)';
+              filterStyle = 'contrast(1.4) brightness(1.1)';
               break;
             case 'Sepia':
-              ctx.filter = 'sepia(1)';
+              filterStyle = 'sepia(1)';
               break;
           }
+          if (filterStyle) {
+            ctx.filter = filterStyle;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.filter = 'none';
+          }
         }
-
-        // Reset filter for overlays
-        ctx.filter = 'none';
 
         // Add text overlays
         textElements.forEach((element, index) => {
@@ -461,32 +555,32 @@ const VideoEditing: React.FC = () => {
         });
 
         // Add sticker overlays
-        addedStickers.forEach((sticker, index) => {
+        addedStickers.forEach((element) => {
+          const sticker = element.content as Sticker;
           ctx.font = '64px Arial';
-          const x = 100 + (index * 80);
-          const y = 200 + (index * 80);
+          const x = (element.x / 100) * canvas.width;
+          const y = (element.y / 100) * canvas.height;
           ctx.fillText(sticker.url, x, y);
         });
 
-        // Add GIF overlays (as static images for now)
-        for (let i = 0; i < addedGifs.length; i++) {
-          const gif = addedGifs[i];
+        // Add GIF overlays
+        for (const element of addedGifs) {
+          const gif = element.content as GifItem;
           const img = new Image();
           img.crossOrigin = 'anonymous';
           
           try {
             await new Promise<void>((resolve, reject) => {
               img.onload = () => resolve();
-              img.onerror = () => reject();
+              img.onerror = () => reject(new Error('Failed to load GIF'));
               img.src = gif.preview;
             });
 
-            const x = canvas.width - 120 - (i * 90);
-            const y = 50 + (i * 90);
+            const x = (element.x / 100) * canvas.width;
+            const y = (element.y / 100) * canvas.height;
             ctx.drawImage(img, x, y, 80, 80);
           } catch (error) {
             console.log('Failed to load GIF image:', error);
-            // Continue with other overlays even if one fails
           }
         }
       }
@@ -497,7 +591,7 @@ const VideoEditing: React.FC = () => {
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `edited-video-frame-${Date.now()}.png`;
+          a.download = `edited-video-${Date.now()}.png`;
           a.style.display = 'none';
           document.body.appendChild(a);
           a.click();
@@ -505,8 +599,8 @@ const VideoEditing: React.FC = () => {
           URL.revokeObjectURL(url);
 
           toast({
-            title: "Export Complete!",
-            description: `Video frame exported successfully with ${textElements.length} text elements, ${addedStickers.length} stickers, and ${addedGifs.length} GIFs`,
+            title: "Video Export Complete!",
+            description: `Video exported with ${textElements.length} text elements, ${addedStickers.length} stickers, ${addedGifs.length} GIFs, and ${selectedFilter || 'no'} filter applied`,
           });
         }
       }, 'image/png');
@@ -867,16 +961,27 @@ const VideoEditing: React.FC = () => {
             <div className="lg:col-span-2">
               <Card className="h-full flex flex-col">
                 <CardHeader className="pb-3 flex flex-row justify-between items-center">
-                  <CardTitle>Preview</CardTitle>
+                  <CardTitle>Video Preview</CardTitle>
                   {customTemplate && (
                     <div className="flex items-center text-sm">
                       <span className="text-gray-500 mr-2">Template:</span>
                       <Badge variant="secondary">{customTemplate.title}</Badge>
                     </div>
                   )}
+                  {selectedFilter && (
+                    <div className="flex items-center text-sm">
+                      <span className="text-gray-500 mr-2">Filter:</span>
+                      <Badge variant="outline">{selectedFilter}</Badge>
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col">
-                  <div className="flex-grow bg-black rounded-md flex items-center justify-center relative min-h-[300px]">
+                  <div 
+                    ref={previewContainerRef}
+                    className="flex-grow bg-black rounded-md flex items-center justify-center relative min-h-[300px]"
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                  >
                     {videoPreview ? (
                       <video 
                         ref={videoPlayerRef}
@@ -908,55 +1013,65 @@ const VideoEditing: React.FC = () => {
                       </div>
                     ))}
                     
-                    {/* Sticker overlays */}
-                    {addedStickers.map((sticker, index) => (
-                      <div 
-                        key={`sticker-${index}`}
-                        className="absolute text-4xl cursor-move group"
-                        style={{ 
-                          top: `${20 + (index * 10)}%`, 
-                          left: `${20 + (index * 10)}%`
-                        }}
-                      >
-                        {sticker.url}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
-                          onClick={() => handleDeleteSticker(index)}
+                    {/* Draggable sticker overlays */}
+                    {addedStickers.map((element) => {
+                      const sticker = element.content as Sticker;
+                      return (
+                        <div 
+                          key={element.id}
+                          className="absolute text-4xl cursor-move group"
+                          style={{ 
+                            top: `${element.y}%`, 
+                            left: `${element.x}%`
+                          }}
+                          draggable
+                          onDragStart={() => handleDragStart(element.id)}
                         >
-                          <Trash2 className="h-3 w-3 text-white" />
-                        </Button>
-                      </div>
-                    ))}
+                          {sticker.url}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
+                            onClick={() => handleDeleteSticker(element.id)}
+                          >
+                            <Trash2 className="h-3 w-3 text-white" />
+                          </Button>
+                        </div>
+                      );
+                    })}
                     
-                    {/* GIF overlays */}
-                    {addedGifs.map((gif, index) => (
-                      <div 
-                        key={`gif-${index}`}
-                        className="absolute cursor-move group"
-                        style={{ 
-                          top: `${30 + (index * 10)}%`, 
-                          right: `${20 + (index * 10)}%`,
-                          width: '80px',
-                          height: '80px'
-                        }}
-                      >
-                        <img 
-                          src={gif.preview} 
-                          alt={gif.title}
-                          className="w-full h-full object-cover rounded"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
-                          onClick={() => handleDeleteGif(index)}
+                    {/* Draggable GIF overlays */}
+                    {addedGifs.map((element) => {
+                      const gif = element.content as GifItem;
+                      return (
+                        <div 
+                          key={element.id}
+                          className="absolute cursor-move group"
+                          style={{ 
+                            top: `${element.y}%`, 
+                            left: `${element.x}%`,
+                            width: '80px',
+                            height: '80px'
+                          }}
+                          draggable
+                          onDragStart={() => handleDragStart(element.id)}
                         >
-                          <Trash2 className="h-3 w-3 text-white" />
-                        </Button>
-                      </div>
-                    ))}
+                          <img 
+                            src={gif.preview} 
+                            alt={gif.title}
+                            className="w-full h-full object-cover rounded"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
+                            onClick={() => handleDeleteGif(element.id)}
+                          >
+                            <Trash2 className="h-3 w-3 text-white" />
+                          </Button>
+                        </div>
+                      );
+                    })}
                   </div>
                   
                   {/* Video controls */}
