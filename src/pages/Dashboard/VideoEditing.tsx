@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -15,17 +14,10 @@ import {
   Plus,
   Search,
   Download,
-  Settings,
-  Copy,
-  Smile,
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  Volume2,
   Upload,
   Trash2,
-  Clock
+  Clock,
+  Layers
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -35,6 +27,9 @@ import { useToast } from "@/hooks/use-toast";
 import TemplateGallery, { Template } from "@/components/Dashboard/TemplateGallery";
 import StickerLibrary, { Sticker } from "@/components/Dashboard/StickerLibrary";
 import GifLibrary, { GifItem } from "@/components/Dashboard/GifLibrary";
+import VideoTimeline, { TimelineTrack } from "@/components/Dashboard/VideoTimeline";
+import IntroTemplates, { IntroTemplate } from "@/components/Dashboard/IntroTemplates";
+import MultiVideoManager, { VideoAsset } from "@/components/Dashboard/MultiVideoManager";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
@@ -94,6 +89,10 @@ const VideoEditing: React.FC = () => {
   // Template and editing state
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [customTemplate, setCustomTemplate] = useState<Template | null>(null);
+  const [selectedIntroTemplate, setSelectedIntroTemplate] = useState<IntroTemplate | null>(null);
+  const [videoAssets, setVideoAssets] = useState<VideoAsset[]>([]);
+  const [timelineTracks, setTimelineTracks] = useState<TimelineTrack[]>([]);
+  const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
   const [editingMode, setEditingMode] = useState(false);
   const [selectedTabInEditor, setSelectedTabInEditor] = useState<string>("trim");
   
@@ -203,20 +202,41 @@ const VideoEditing: React.FC = () => {
     const file = event.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
-      const newAsset: MediaAsset = {
-        id: Date.now().toString(),
+      const videoId = Date.now().toString();
+      
+      const newVideoAsset: VideoAsset = {
+        id: videoId,
         name: file.name,
-        type: 'video',
         url: url,
-        duration: "00:00",
-        size: "Unknown"
+        duration: 0, // Will be updated when video loads
+        position: videoAssets.length,
+        isActive: videoAssets.length === 0
       };
-      setMediaAssets(prev => [...prev, newAsset]);
-      setVideoPreview(url);
-      setEditingMode(true);
+      
+      setVideoAssets(prev => [...prev, newVideoAsset]);
+      
+      if (videoAssets.length === 0) {
+        setVideoPreview(url);
+        setCurrentVideoId(videoId);
+        setEditingMode(true);
+      }
+      
+      // Create timeline track for the video
+      const newTrack: TimelineTrack = {
+        id: videoId,
+        type: 'video',
+        name: file.name,
+        startTime: 0,
+        duration: 0, // Will be updated
+        url: url,
+        color: '#3b82f6'
+      };
+      
+      setTimelineTracks(prev => [...prev, newTrack]);
+      
       toast({
-        title: "Video Uploaded",
-        description: `${file.name} has been added to your media assets`,
+        title: "Video Added",
+        description: `${file.name} has been added to your video sequence`,
       });
     }
   };
@@ -265,6 +285,70 @@ const VideoEditing: React.FC = () => {
         description: `${file.name} has been added to your media assets`,
       });
     }
+  };
+
+  // Handle intro template selection
+  const handleIntroTemplateSelect = (template: IntroTemplate) => {
+    setSelectedIntroTemplate(template);
+    setEditingMode(true);
+    setSelectedTemplate(template.id);
+    
+    // Create a timeline track for the intro
+    const introTrack: TimelineTrack = {
+      id: `intro-${template.id}`,
+      type: 'video',
+      name: template.title,
+      startTime: 0,
+      duration: parseInt(template.duration),
+      color: '#8b5cf6'
+    };
+    
+    setTimelineTracks(prev => [introTrack, ...prev]);
+    
+    toast({
+      title: "Intro Template Selected",
+      description: `${template.title} has been loaded. You can now customize it with your content.`,
+    });
+  };
+
+  // Multi-video management handlers
+  const handleVideoSelect = (videoId: string) => {
+    const video = videoAssets.find(v => v.id === videoId);
+    if (video) {
+      setVideoAssets(prev => prev.map(v => ({ ...v, isActive: v.id === videoId })));
+      setVideoPreview(video.url);
+      setCurrentVideoId(videoId);
+    }
+  };
+
+  const handleVideoDelete = (videoId: string) => {
+    setVideoAssets(prev => prev.filter(v => v.id !== videoId));
+    setTimelineTracks(prev => prev.filter(t => t.id !== videoId));
+    
+    if (currentVideoId === videoId) {
+      const remainingVideos = videoAssets.filter(v => v.id !== videoId);
+      if (remainingVideos.length > 0) {
+        handleVideoSelect(remainingVideos[0].id);
+      } else {
+        setVideoPreview(null);
+        setCurrentVideoId(null);
+        setEditingMode(false);
+      }
+    }
+    
+    toast({
+      title: "Video Removed",
+      description: "Video has been removed from the sequence",
+    });
+  };
+
+  const handleVideoReorder = (fromIndex: number, toIndex: number) => {
+    setVideoAssets(prev => {
+      const newOrder = [...prev];
+      const [moved] = newOrder.splice(fromIndex, 1);
+      newOrder.splice(toIndex, 0, moved);
+      return newOrder.map((video, index) => ({ ...video, position: index }));
+    });
   };
 
   // Media asset handlers
@@ -447,8 +531,10 @@ const VideoEditing: React.FC = () => {
 
   // Enhanced sticker and GIF handlers
   const handleStickerSelect = (sticker: Sticker) => {
+    const elementId = Date.now().toString();
+    
     const newElement: DraggableElement = {
-      id: Date.now().toString(),
+      id: elementId,
       type: 'sticker',
       content: sticker,
       x: 20,
@@ -458,51 +544,55 @@ const VideoEditing: React.FC = () => {
       scale: 1
     };
     
-    const newTimelineElement: TimelineElement = {
-      id: newElement.id,
+    const newTrack: TimelineTrack = {
+      id: elementId,
       type: 'sticker',
       name: sticker.name,
       startTime: currentTime,
-      endTime: Math.min(currentTime + 5, duration || 10),
-      track: timelineElements.length
+      duration: 5,
+      content: sticker,
+      color: '#f59e0b'
     };
     
     setAddedElements(prev => [...prev, newElement]);
-    setTimelineElements(prev => [...prev, newTimelineElement]);
+    setTimelineTracks(prev => [...prev, newTrack]);
     
     toast({
       title: "Sticker Added",
-      description: "Sticker has been added to your video timeline!",
+      description: "Sticker has been added to your timeline!",
     });
   };
 
   const handleGifSelect = (gif: GifItem) => {
+    const elementId = Date.now().toString();
+    
     const newElement: DraggableElement = {
-      id: Date.now().toString(),
+      id: elementId,
       type: 'gif',
       content: gif,
-      x: 100,
-      y: 100,
+      x: 50,
+      y: 50,
       startTime: currentTime,
       endTime: Math.min(currentTime + 3, duration || 10),
       scale: 1
     };
     
-    const newTimelineElement: TimelineElement = {
-      id: newElement.id,
+    const newTrack: TimelineTrack = {
+      id: elementId,
       type: 'gif',
       name: gif.title,
       startTime: currentTime,
-      endTime: Math.min(currentTime + 3, duration || 10),
-      track: timelineElements.length
+      duration: 3,
+      content: gif,
+      color: '#ef4444'
     };
     
     setAddedElements(prev => [...prev, newElement]);
-    setTimelineElements(prev => [...prev, newTimelineElement]);
+    setTimelineTracks(prev => [...prev, newTrack]);
     
     toast({
       title: "GIF Added",
-      description: "GIF has been added to your video timeline!",
+      description: "GIF has been added to your timeline!",
     });
   };
 
@@ -750,8 +840,8 @@ const VideoEditing: React.FC = () => {
     <DashboardLayout pageTitle="Video Editing">
       {hiddenFileInputs}
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold">Video Editing Studio</h2>
-        <p className="text-gray-600">Create professional videos with full editing capabilities.</p>
+        <h2 className="text-2xl font-semibold">Professional Video Editor</h2>
+        <p className="text-gray-600">Create stunning videos with multi-track timeline and customizable intro templates.</p>
       </div>
       
       <Tabs defaultValue={editingMode ? "editor" : "templates"} onValueChange={(value) => {
@@ -761,7 +851,8 @@ const VideoEditing: React.FC = () => {
       }}>
         <TabsList className="mb-6">
           <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="editor" disabled={!editingMode && !selectedTemplate && !videoPreview}>Video Editor</TabsTrigger>
+          <TabsTrigger value="intros">Intro Templates</TabsTrigger>
+          <TabsTrigger value="editor" disabled={!editingMode && !selectedTemplate && !videoPreview}>Video Studio</TabsTrigger>
         </TabsList>
         
         <TabsContent value="templates" className="space-y-6">
@@ -825,10 +916,31 @@ const VideoEditing: React.FC = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="intros" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Customizable Intro Templates</CardTitle>
+              <CardDescription>Choose from professional intro templates and customize them with your content</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <IntroTemplates onSelectTemplate={handleIntroTemplateSelect} />
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         <TabsContent value="editor" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-1">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* Left Sidebar - Media & Multi-Video Manager */}
+            <div className="lg:col-span-1 space-y-4">
+              <MultiVideoManager
+                videos={videoAssets}
+                onVideoAdd={() => videoFileRef.current?.click()}
+                onVideoDelete={handleVideoDelete}
+                onVideoSelect={handleVideoSelect}
+                onVideoReorder={handleVideoReorder}
+              />
+              
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle>Media Assets</CardTitle>
@@ -974,23 +1086,25 @@ const VideoEditing: React.FC = () => {
               </Card>
             </div>
             
-            {/* Main preview area */}
-            <div className="lg:col-span-2">
+            {/* Main Preview Area */}
+            <div className="lg:col-span-3">
               <Card className="h-full flex flex-col">
                 <CardHeader className="pb-3 flex flex-row justify-between items-center">
-                  <CardTitle>Video Preview</CardTitle>
-                  {customTemplate && (
-                    <div className="flex items-center text-sm">
-                      <span className="text-gray-500 mr-2">Template:</span>
-                      <Badge variant="secondary">{customTemplate.title}</Badge>
-                    </div>
-                  )}
-                  {selectedFilter && (
-                    <div className="flex items-center text-sm">
-                      <span className="text-gray-500 mr-2">Filter:</span>
-                      <Badge variant="outline">{selectedFilter}</Badge>
-                    </div>
-                  )}
+                  <CardTitle className="flex items-center gap-2">
+                    <Video className="h-5 w-5" />
+                    Video Preview
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    {selectedIntroTemplate && (
+                      <Badge variant="secondary">{selectedIntroTemplate.title}</Badge>
+                    )}
+                    {videoAssets.length > 1 && (
+                      <Badge variant="outline">
+                        <Layers className="h-3 w-3 mr-1" />
+                        {videoAssets.length} videos
+                      </Badge>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col">
                   <div 
@@ -1174,7 +1288,7 @@ const VideoEditing: React.FC = () => {
               </Card>
             </div>
             
-            {/* Right sidebar with editing tools */}
+            {/* Right Sidebar - Editing Tools */}
             <div className="lg:col-span-1">
               <Card>
                 <CardHeader className="pb-3">
@@ -1369,6 +1483,29 @@ const VideoEditing: React.FC = () => {
               </Card>
             </div>
           </div>
+          
+          {/* Professional Timeline */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Professional Timeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <VideoTimeline
+                tracks={timelineTracks}
+                currentTime={currentTime}
+                totalDuration={duration || 30}
+                onTimeChange={setCurrentTime}
+                onTrackUpdate={handleTimelineTrackUpdate}
+                onTrackDelete={handleTimelineTrackDelete}
+                onPlay={handlePlayPause}
+                onPause={handlePlayPause}
+                isPlaying={isPlaying}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </DashboardLayout>
