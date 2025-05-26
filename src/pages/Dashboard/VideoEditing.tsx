@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -473,25 +474,31 @@ const VideoEditing: React.FC = () => {
           const img = new Image();
           img.crossOrigin = 'anonymous';
           
-          await new Promise<void>((resolve) => {
-            img.onload = () => resolve();
-            img.onerror = () => resolve(); // Continue even if image fails to load
-            img.src = gif.preview;
-          });
+          try {
+            await new Promise<void>((resolve, reject) => {
+              img.onload = () => resolve();
+              img.onerror = () => reject();
+              img.src = gif.preview;
+            });
 
-          const x = canvas.width - 120 - (i * 90);
-          const y = 50 + (i * 90);
-          ctx.drawImage(img, x, y, 80, 80);
+            const x = canvas.width - 120 - (i * 90);
+            const y = 50 + (i * 90);
+            ctx.drawImage(img, x, y, 80, 80);
+          } catch (error) {
+            console.log('Failed to load GIF image:', error);
+            // Continue with other overlays even if one fails
+          }
         }
       }
 
-      // Convert canvas to blob and download
+      // Convert canvas to blob and trigger download
       canvas.toBlob((blob) => {
         if (blob) {
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
           a.download = `edited-video-frame-${Date.now()}.png`;
+          a.style.display = 'none';
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -827,6 +834,31 @@ const VideoEditing: React.FC = () => {
                       </Button>
                     </TabsContent>
                   </Tabs>
+                  
+                  {/* Design Elements Section */}
+                  <div className="mt-6">
+                    <h4 className="text-sm font-medium mb-3">Design Elements</h4>
+                    <Tabs defaultValue="stickers">
+                      <TabsList className="grid w-full grid-cols-2 mb-3">
+                        <TabsTrigger value="stickers" className="text-xs">
+                          <Smile className="h-3 w-3 mr-1" />
+                          Stickers
+                        </TabsTrigger>
+                        <TabsTrigger value="gifs" className="text-xs">
+                          <Image className="h-3 w-3 mr-1" />
+                          GIFs
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="stickers" className="pt-2">
+                        <StickerLibrary onStickerSelect={handleStickerSelect} />
+                      </TabsContent>
+                      
+                      <TabsContent value="gifs" className="pt-2">
+                        <GifLibrary onGifSelect={handleGifSelect} />
+                      </TabsContent>
+                    </Tabs>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -987,7 +1019,7 @@ const VideoEditing: React.FC = () => {
                         <span>Text</span>
                       </TabsTrigger>
                     </TabsList>
-                    <TabsList className="grid w-full grid-cols-3 mt-2">
+                    <TabsList className="grid w-full grid-cols-2 mt-2">
                       <TabsTrigger value="music" className="text-xs">
                         <Music className="h-4 w-4 mb-1" />
                         <span>Audio</span>
@@ -1001,10 +1033,6 @@ const VideoEditing: React.FC = () => {
                           <path d="M17 19h4"></path>
                         </svg>
                         <span>Effects</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="stickers" className="text-xs">
-                        <Smile className="h-4 w-4 mb-1" />
-                        <span>Stickers</span>
                       </TabsTrigger>
                     </TabsList>
                     
@@ -1151,15 +1179,6 @@ const VideoEditing: React.FC = () => {
                           ))}
                         </div>
                       </div>
-                      
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium mb-2">Add GIFs</h4>
-                        <GifLibrary onGifSelect={handleGifSelect} />
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="stickers" className="pt-4">
-                      <StickerLibrary onStickerSelect={handleStickerSelect} />
                     </TabsContent>
                   </Tabs>
                   
