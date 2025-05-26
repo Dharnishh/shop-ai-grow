@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -132,7 +133,7 @@ const VideoEditing: React.FC = () => {
     ? templates 
     : templates.filter(template => template.category === activeCategory);
 
-  // File upload handlers (moved before hiddenFileInputs)
+  // File upload handlers
   const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -201,7 +202,159 @@ const VideoEditing: React.FC = () => {
     }
   };
 
-  // Hidden file inputs for upload functionality (now after handlers)
+  // Media asset handlers
+  const handleSelectAsset = (asset: MediaAsset) => {
+    if (asset.type === 'video') {
+      setVideoPreview(asset.url);
+    }
+    toast({
+      title: "Asset Selected",
+      description: `${asset.name} is now active in the editor`,
+    });
+  };
+
+  const handleDeleteAsset = (assetId: string) => {
+    setMediaAssets(prev => prev.filter(asset => asset.id !== assetId));
+    toast({
+      title: "Asset Deleted",
+      description: "Media asset has been removed",
+    });
+  };
+
+  // Video player control handlers
+  const handlePlayPause = () => {
+    const video = videoPlayerRef.current;
+    if (video) {
+      if (isPlaying) {
+        video.pause();
+      } else {
+        video.play();
+      }
+    }
+  };
+
+  const handleSkipBack = () => {
+    const video = videoPlayerRef.current;
+    if (video) {
+      video.currentTime = Math.max(0, video.currentTime - 10);
+    }
+  };
+
+  const handleSkipForward = () => {
+    const video = videoPlayerRef.current;
+    if (video) {
+      video.currentTime = Math.min(video.duration, video.currentTime + 10);
+    }
+  };
+
+  const handleVolumeChange = (value: number[]) => {
+    const newVolume = value[0];
+    setVolume(newVolume);
+    const video = videoPlayerRef.current;
+    if (video) {
+      video.volume = newVolume / 100;
+    }
+  };
+
+  const handleSeek = (value: number[]) => {
+    const video = videoPlayerRef.current;
+    if (video && duration > 0) {
+      const newTime = (value[0] / 100) * duration;
+      video.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
+
+  // Trim handlers
+  const handleTrimStartChange = (value: number[]) => {
+    setTrimStart(value[0]);
+  };
+
+  const handleTrimEndChange = (value: number[]) => {
+    setTrimEnd(value[0]);
+  };
+
+  // Text element handlers
+  const handleAddText = (style: string) => {
+    const newText = {
+      id: Date.now().toString(),
+      text: style === 'Title' ? 'Your Title Here' : 
+            style === 'Subtitle' ? 'Your Subtitle Here' : 
+            'Call to Action',
+      style: style
+    };
+    setTextElements(prev => [...prev, newText]);
+    toast({
+      title: "Text Added",
+      description: `${style} has been added to your video`,
+    });
+  };
+
+  const handleUpdateText = (id: string, newText: string) => {
+    setTextElements(prev => prev.map(element => 
+      element.id === id ? { ...element, text: newText } : element
+    ));
+  };
+
+  const handleDeleteText = (id: string) => {
+    setTextElements(prev => prev.filter(element => element.id !== id));
+  };
+
+  // Audio track handlers
+  const handleDeleteAudioTrack = (trackId: string) => {
+    setAudioTracks(prev => prev.filter(track => track.id !== trackId));
+    setMediaAssets(prev => prev.filter(asset => asset.id !== trackId));
+  };
+
+  const handleAudioVolumeChange = (trackId: string, volume: number) => {
+    setAudioTracks(prev => prev.map(track => 
+      track.id === trackId ? { ...track, volume } : track
+    ));
+  };
+
+  // Effects handlers
+  const handleSelectTransition = (transition: string) => {
+    setSelectedTransition(transition);
+    toast({
+      title: "Transition Selected",
+      description: `${transition} transition will be applied`,
+    });
+  };
+
+  const handleSelectFilter = (filter: string) => {
+    setSelectedFilter(filter);
+    toast({
+      title: "Filter Applied",
+      description: `${filter} filter has been applied to your video`,
+    });
+  };
+
+  // Sticker and GIF handlers
+  const handleStickerSelect = (sticker: Sticker) => {
+    setAddedStickers(prev => [...prev, sticker]);
+    toast({
+      title: "Sticker Added",
+      description: "Sticker has been added to your video",
+    });
+  };
+
+  const handleDeleteSticker = (index: number) => {
+    setAddedStickers(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleGifSelect = (gif: GifItem) => {
+    setAddedGifs(prev => [...prev, gif]);
+    toast({
+      title: "GIF Added",
+      description: "GIF has been added to your video",
+    });
+  };
+
+  const handleDeleteGif = (index: number) => {
+    setAddedGifs(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Hidden file inputs for upload functionality
   const hiddenFileInputs = (
     <>
       <input
