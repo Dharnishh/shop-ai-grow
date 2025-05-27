@@ -203,88 +203,47 @@ const VideoEditing: React.FC = () => {
     })));
   }, [currentTime]);
 
-  // Enhanced video upload handler with proper duration detection
+  // File upload handlers
   const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
       const videoId = Date.now().toString();
       
-      // Create a temporary video element to get duration
-      const tempVideo = document.createElement('video');
-      tempVideo.src = url;
+      const newVideoAsset: VideoAsset = {
+        id: videoId,
+        name: file.name,
+        url: url,
+        duration: 0, // Will be updated when video loads
+        position: videoAssets.length,
+        isActive: videoAssets.length === 0
+      };
       
-      tempVideo.addEventListener('loadedmetadata', () => {
-        const videoDuration = tempVideo.duration || 30; // Default to 30 seconds if duration not available
-        
-        const newVideoAsset: VideoAsset = {
-          id: videoId,
-          name: file.name,
-          url: url,
-          duration: videoDuration,
-          position: videoAssets.length,
-          isActive: videoAssets.length === 0
-        };
-        
-        setVideoAssets(prev => [...prev, newVideoAsset]);
-        
-        // Set as active video if it's the first one
-        if (videoAssets.length === 0) {
-          setVideoPreview(url);
-          setCurrentVideoId(videoId);
-          setEditingMode(true);
-          setDuration(videoDuration);
-        }
-        
-        // Create timeline track for the video
-        const newTrack: TimelineTrack = {
-          id: videoId,
-          type: 'video',
-          name: file.name,
-          startTime: 0,
-          duration: videoDuration,
-          url: url,
-          color: '#3b82f6'
-        };
-        
-        setTimelineTracks(prev => [...prev, newTrack]);
-        
-        // Add to media assets as well
-        const newAsset: MediaAsset = {
-          id: videoId,
-          name: file.name,
-          type: 'video',
-          url: url,
-          duration: formatTime(videoDuration),
-          size: `${Math.round(file.size / (1024 * 1024))}MB`
-        };
-        setMediaAssets(prev => [...prev, newAsset]);
-        
-        toast({
-          title: "Video Added Successfully",
-          description: `${file.name} has been added to your video sequence and is ready for editing`,
-        });
-        
-        // Clean up temporary video element
-        tempVideo.remove();
+      setVideoAssets(prev => [...prev, newVideoAsset]);
+      
+      if (videoAssets.length === 0) {
+        setVideoPreview(url);
+        setCurrentVideoId(videoId);
+        setEditingMode(true);
+      }
+      
+      // Create timeline track for the video
+      const newTrack: TimelineTrack = {
+        id: videoId,
+        type: 'video',
+        name: file.name,
+        startTime: 0,
+        duration: 0, // Will be updated
+        url: url,
+        color: '#3b82f6'
+      };
+      
+      setTimelineTracks(prev => [...prev, newTrack]);
+      
+      toast({
+        title: "Video Added",
+        description: `${file.name} has been added to your video sequence`,
       });
-      
-      tempVideo.addEventListener('error', () => {
-        toast({
-          title: "Error Loading Video",
-          description: "There was an issue loading the video file. Please try again.",
-          variant: "destructive"
-        });
-        tempVideo.remove();
-      });
-      
-      // Load the video to trigger metadata loading
-      tempVideo.load();
-    }
-    
-    // Reset the file input so the same file can be selected again
-    if (event.target) {
-      event.target.value = '';
     }
   };
 
@@ -365,19 +324,6 @@ const VideoEditing: React.FC = () => {
       setVideoAssets(prev => prev.map(v => ({ ...v, isActive: v.id === videoId })));
       setVideoPreview(video.url);
       setCurrentVideoId(videoId);
-      setDuration(video.duration);
-      setCurrentTime(0);
-      
-      // Reset video player
-      if (videoPlayerRef.current) {
-        videoPlayerRef.current.currentTime = 0;
-        videoPlayerRef.current.load();
-      }
-      
-      toast({
-        title: "Video Selected",
-        description: `Now editing: ${video.name}`,
-      });
     }
   };
 
@@ -678,51 +624,22 @@ const VideoEditing: React.FC = () => {
     setAddedElements(prev => prev.filter(element => element.id !== trackId));
   };
 
-  // Video player control functions with enhanced metadata handling
+  // Video player control functions
   useEffect(() => {
     const video = videoPlayerRef.current;
     if (video) {
       const updateTime = () => setCurrentTime(video.currentTime);
-      const updateDuration = () => {
-        if (video.duration && !isNaN(video.duration)) {
-          setDuration(video.duration);
-          
-          // Update the current video asset with correct duration
-          if (currentVideoId) {
-            setVideoAssets(prev => prev.map(v => 
-              v.id === currentVideoId ? { ...v, duration: video.duration } : v
-            ));
-            
-            // Update timeline track duration
-            setTimelineTracks(prev => prev.map(track => 
-              track.id === currentVideoId ? { ...track, duration: video.duration } : track
-            ));
-          }
-        }
-      };
-      
-      const handleLoadStart = () => {
-        console.log('Video loading started');
-      };
-      
-      const handleCanPlay = () => {
-        console.log('Video can start playing');
-        updateDuration();
-      };
+      const updateDuration = () => setDuration(video.duration);
       
       video.addEventListener('timeupdate', updateTime);
       video.addEventListener('loadedmetadata', updateDuration);
-      video.addEventListener('loadstart', handleLoadStart);
-      video.addEventListener('canplay', handleCanPlay);
       
       return () => {
         video.removeEventListener('timeupdate', updateTime);
         video.removeEventListener('loadedmetadata', updateDuration);
-        video.removeEventListener('loadstart', handleLoadStart);
-        video.removeEventListener('canplay', handleCanPlay);
       };
     }
-  }, [videoPreview, currentVideoId]);
+  }, [videoPreview]);
 
   // Enhanced export function for video with all effects
   const handleExport = async () => {
@@ -919,7 +836,6 @@ const VideoEditing: React.FC = () => {
         accept="video/*"
         onChange={handleVideoUpload}
         className="hidden"
-        multiple={false}
       />
       <input
         type="file"
@@ -994,7 +910,7 @@ const VideoEditing: React.FC = () => {
               />
               
               <div className="mt-6 flex justify-end gap-2">
-                <Button variant="outline" onClick={handleVideoAdd}>
+                <Button variant="outline" onClick={() => videoFileRef.current?.click()}>
                   <FileVideo className="h-4 w-4 mr-2" />
                   Upload Video
                 </Button>
@@ -1037,7 +953,7 @@ const VideoEditing: React.FC = () => {
             <div className="lg:col-span-1 space-y-4">
               <MultiVideoManager
                 videos={videoAssets}
-                onVideoAdd={handleVideoAdd}
+                onVideoAdd={() => videoFileRef.current?.click()}
                 onVideoDelete={handleVideoDelete}
                 onVideoSelect={handleVideoSelect}
                 onVideoReorder={handleVideoReorder}
