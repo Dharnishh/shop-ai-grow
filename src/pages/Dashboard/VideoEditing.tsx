@@ -17,7 +17,13 @@ import {
   Upload,
   Trash2,
   Clock,
-  Layers
+  Layers,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  Smile
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -604,6 +610,18 @@ const VideoEditing: React.FC = () => {
     setAddedElements(prev => prev.map(element => 
       element.id === id ? { ...element, startTime, endTime } : element
     ));
+  };
+
+  // Add missing timeline handler functions
+  const handleTimelineTrackUpdate = (trackId: string, updates: Partial<TimelineTrack>) => {
+    setTimelineTracks(prev => prev.map(track => 
+      track.id === trackId ? { ...track, ...updates } : track
+    ));
+  };
+
+  const handleTimelineTrackDelete = (trackId: string) => {
+    setTimelineTracks(prev => prev.filter(track => track.id !== trackId));
+    setAddedElements(prev => prev.filter(element => element.id !== trackId));
   };
 
   // Video player control functions
