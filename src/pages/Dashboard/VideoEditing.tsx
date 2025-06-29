@@ -201,7 +201,6 @@ import {
   Rainbow,
   Gem,
   CircleCheck,
-  Hat,
   Glasses,
   Pill,
   Syringe,
@@ -638,13 +637,13 @@ const VideoEditing: React.FC = () => {
 
   return (
     <DashboardLayout pageTitle="Video Editing Studio">
-      <div className="h-full flex flex-col bg-gray-900 text-white overflow-hidden">
+      <div className="h-full flex flex-col bg-white text-gray-900 overflow-hidden">
         {/* Top Toolbar */}
-        <div className="bg-gray-800 p-4 flex items-center justify-between border-b border-gray-700">
+        <div className="bg-white p-4 flex items-center justify-between border-b border-gray-200 shadow-sm">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold">{projectSettings.title}</h1>
-            <Badge variant="secondary">{projectSettings.resolution}</Badge>
-            <Badge variant="secondary">{projectSettings.frameRate}fps</Badge>
+            <h1 className="text-xl font-semibold text-gray-900">{projectSettings.title}</h1>
+            <Badge variant="secondary" className="bg-gray-100 text-gray-700">{projectSettings.resolution}</Badge>
+            <Badge variant="secondary" className="bg-gray-100 text-gray-700">{projectSettings.frameRate}fps</Badge>
           </div>
           
           <div className="flex items-center gap-2">
@@ -653,7 +652,7 @@ const VideoEditing: React.FC = () => {
               size="sm"
               onClick={handleExport}
               disabled={isExporting}
-              className="text-white border-gray-600 hover:bg-gray-700"
+              className="text-gray-700 border-gray-300 hover:bg-gray-50"
             >
               {isExporting ? (
                 <>
@@ -670,7 +669,7 @@ const VideoEditing: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              className="text-white border-gray-600 hover:bg-gray-700"
+              className="text-gray-700 border-gray-300 hover:bg-gray-50"
             >
               <Edit className="h-4 w-4 mr-2" />
               Save
@@ -681,19 +680,19 @@ const VideoEditing: React.FC = () => {
         {/* Main Content Area */}
         <div className="flex-1 flex">
           {/* Left Sidebar - Tools */}
-          <div className="w-80 bg-gray-800 border-r border-gray-700 flex flex-col">
+          <div className="w-80 bg-white border-r border-gray-200 flex flex-col shadow-sm">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-              <TabsList className="grid w-full grid-cols-4 bg-gray-700">
-                <TabsTrigger value="media" className="text-xs">Media</TabsTrigger>
-                <TabsTrigger value="effects" className="text-xs">Effects</TabsTrigger>
-                <TabsTrigger value="audio" className="text-xs">Audio</TabsTrigger>
-                <TabsTrigger value="text" className="text-xs">Text</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 bg-gray-50 border-b border-gray-200">
+                <TabsTrigger value="media" className="text-xs text-gray-700">Media</TabsTrigger>
+                <TabsTrigger value="effects" className="text-xs text-gray-700">Effects</TabsTrigger>
+                <TabsTrigger value="audio" className="text-xs text-gray-700">Audio</TabsTrigger>
+                <TabsTrigger value="text" className="text-xs text-gray-700">Text</TabsTrigger>
               </TabsList>
 
               <TabsContent value="media" className="flex-1 p-4">
                 <div className="space-y-4">
                   <Button 
-                    className="w-full" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
                     onClick={handleVideoAdd}
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -710,18 +709,18 @@ const VideoEditing: React.FC = () => {
                   </Button>
 
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Video Assets</h3>
+                    <h3 className="text-sm font-medium text-gray-900">Video Assets</h3>
                     <ScrollArea className="h-40">
                       {videoAssets.map((video) => (
                         <div
                           key={video.id}
                           className={`p-2 rounded cursor-pointer ${
-                            video.isActive ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
+                            video.isActive ? 'bg-blue-100 border border-blue-300' : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
                           }`}
                           onClick={() => handleVideoSelect(video.id)}
                         >
-                          <div className="text-sm font-medium truncate">{video.name}</div>
-                          <div className="text-xs text-gray-400">
+                          <div className="text-sm font-medium truncate text-gray-900">{video.name}</div>
+                          <div className="text-xs text-gray-500">
                             {Math.round(video.duration)}s
                           </div>
                         </div>
@@ -734,7 +733,7 @@ const VideoEditing: React.FC = () => {
               <TabsContent value="effects" className="flex-1 p-4">
                 <div className="space-y-4">
                   <Button 
-                    className="w-full" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
                     onClick={() => setShowEffects(true)}
                   >
                     <Zap className="h-4 w-4 mr-2" />
@@ -742,7 +741,7 @@ const VideoEditing: React.FC = () => {
                   </Button>
                   
                   <Button 
-                    className="w-full" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
                     onClick={() => setShowTransitions(true)}
                   >
                     <Layers className="h-4 w-4 mr-2" />
@@ -750,7 +749,7 @@ const VideoEditing: React.FC = () => {
                   </Button>
                   
                   <Button 
-                    className="w-full" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
                     onClick={() => setShowStickers(true)}
                   >
                     <Smile className="h-4 w-4 mr-2" />
@@ -761,12 +760,12 @@ const VideoEditing: React.FC = () => {
 
               <TabsContent value="audio" className="flex-1 p-4">
                 <div className="space-y-4">
-                  <Button className="w-full">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                     <Music className="h-4 w-4 mr-2" />
                     Add Music
                   </Button>
                   
-                  <Button className="w-full">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                     <Mic className="h-4 w-4 mr-2" />
                     Record Audio
                   </Button>
@@ -775,12 +774,12 @@ const VideoEditing: React.FC = () => {
 
               <TabsContent value="text" className="flex-1 p-4">
                 <div className="space-y-4">
-                  <Button className="w-full">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                     <Type className="h-4 w-4 mr-2" />
                     Add Text
                   </Button>
                   
-                  <Button className="w-full">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                     <Edit className="h-4 w-4 mr-2" />
                     Captions
                   </Button>
@@ -790,14 +789,14 @@ const VideoEditing: React.FC = () => {
           </div>
 
           {/* Center - Video Preview */}
-          <div className="flex-1 flex flex-col bg-black">
+          <div className="flex-1 flex flex-col bg-gray-100">
             <div className="flex-1 flex items-center justify-center p-4">
               {videoPreview ? (
                 <div className="relative max-w-full max-h-full">
                   <video
                     ref={videoRef}
                     src={videoPreview}
-                    className="max-w-full max-h-full rounded-lg"
+                    className="max-w-full max-h-full rounded-lg shadow-lg"
                     controls={false}
                     onTimeUpdate={() => {
                       if (videoRef.current) {
@@ -817,12 +816,12 @@ const VideoEditing: React.FC = () => {
                   />
                 </div>
               ) : (
-                <div className="text-center text-gray-400">
+                <div className="text-center text-gray-500">
                   <FileVideo className="h-24 w-24 mx-auto mb-4 opacity-50" />
                   <p className="text-lg mb-2">No video loaded</p>
                   <p className="text-sm">Upload a video to start editing</p>
                   <Button 
-                    className="mt-4" 
+                    className="mt-4 bg-blue-600 hover:bg-blue-700 text-white" 
                     onClick={handleVideoAdd}
                   >
                     <Upload className="h-4 w-4 mr-2" />
@@ -833,13 +832,14 @@ const VideoEditing: React.FC = () => {
             </div>
 
             {/* Video Controls */}
-            <div className="bg-gray-800 p-4 border-t border-gray-700">
+            <div className="bg-white p-4 border-t border-gray-200 shadow-sm">
               <div className="flex items-center justify-center gap-4 mb-4">
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={handlePlayPause}
                   disabled={!videoPreview}
+                  className="text-gray-700 hover:bg-gray-100"
                 >
                   {isPlaying ? <Pause /> : <Play />}
                 </Button>
@@ -849,6 +849,7 @@ const VideoEditing: React.FC = () => {
                   size="icon"
                   onClick={handleStop}
                   disabled={!videoPreview}
+                  className="text-gray-700 hover:bg-gray-100"
                 >
                   <Square />
                 </Button>
@@ -858,6 +859,7 @@ const VideoEditing: React.FC = () => {
                     variant="ghost"
                     size="icon"
                     onClick={handleMuteToggle}
+                    className="text-gray-700 hover:bg-gray-100"
                   >
                     {isMuted ? <VolumeX /> : <Volume2 />}
                   </Button>
@@ -873,7 +875,7 @@ const VideoEditing: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-gray-600">
                   {Math.floor(currentTime / 60)}:{(Math.floor(currentTime) % 60).toString().padStart(2, '0')} / {Math.floor(duration / 60)}:{(Math.floor(duration) % 60).toString().padStart(2, '0')}
                 </div>
               </div>
@@ -887,7 +889,7 @@ const VideoEditing: React.FC = () => {
                     max={duration}
                     value={currentTime}
                     onChange={(e) => handleSeek(Number(e.target.value))}
-                    className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                    className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer slider"
                   />
                   <div
                     className="absolute top-0 h-2 bg-blue-500 rounded-lg pointer-events-none"
@@ -899,13 +901,13 @@ const VideoEditing: React.FC = () => {
           </div>
 
           {/* Right Sidebar - Properties */}
-          <div className="w-80 bg-gray-800 border-l border-gray-700 p-4">
+          <div className="w-80 bg-white border-l border-gray-200 p-4 shadow-sm">
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-medium mb-2">Project Settings</h3>
+                <h3 className="text-sm font-medium mb-2 text-gray-900">Project Settings</h3>
                 <div className="space-y-2">
                   <div>
-                    <Label htmlFor="project-title">Title</Label>
+                    <Label htmlFor="project-title" className="text-gray-700">Title</Label>
                     <Input
                       id="project-title"
                       value={projectSettings.title}
@@ -913,12 +915,12 @@ const VideoEditing: React.FC = () => {
                         ...prev,
                         title: e.target.value
                       }))}
-                      className="bg-gray-700 border-gray-600"
+                      className="bg-white border-gray-300 text-gray-900"
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="resolution">Resolution</Label>
+                    <Label htmlFor="resolution" className="text-gray-700">Resolution</Label>
                     <select
                       id="resolution"
                       value={projectSettings.resolution}
@@ -926,7 +928,7 @@ const VideoEditing: React.FC = () => {
                         ...prev,
                         resolution: e.target.value
                       }))}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded"
+                      className="w-full p-2 bg-white border border-gray-300 rounded text-gray-900"
                     >
                       <option value="1920x1080">1920x1080 (Full HD)</option>
                       <option value="1280x720">1280x720 (HD)</option>
@@ -938,9 +940,9 @@ const VideoEditing: React.FC = () => {
 
               {isExporting && (
                 <div>
-                  <h3 className="text-sm font-medium mb-2">Export Progress</h3>
+                  <h3 className="text-sm font-medium mb-2 text-gray-900">Export Progress</h3>
                   <Progress value={exportProgress} className="w-full" />
-                  <p className="text-xs text-gray-400 mt-1">{exportProgress}%</p>
+                  <p className="text-xs text-gray-500 mt-1">{exportProgress}%</p>
                 </div>
               )}
             </div>
@@ -948,33 +950,33 @@ const VideoEditing: React.FC = () => {
         </div>
 
         {/* Timeline */}
-        <div className="h-48 bg-gray-800 border-t border-gray-700 p-4">
+        <div className="h-48 bg-white border-t border-gray-200 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium">Timeline</h3>
+            <h3 className="text-sm font-medium text-gray-900">Timeline</h3>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="text-gray-700 hover:bg-gray-100">
                 <ZoomOut className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="text-gray-700 hover:bg-gray-100">
                 <ZoomIn className="h-4 w-4" />
               </Button>
             </div>
           </div>
           
-          <div ref={timelineRef} className="flex-1 bg-gray-900 rounded-lg p-2 overflow-x-auto">
+          <div ref={timelineRef} className="flex-1 bg-gray-50 rounded-lg p-2 overflow-x-auto border border-gray-200">
             {timelineTracks.length > 0 ? (
               <div className="space-y-2">
                 {timelineTracks.map((track) => (
                   <div
                     key={track.id}
-                    className="h-12 bg-blue-600 rounded flex items-center px-2 text-sm relative"
+                    className="h-12 bg-blue-500 rounded flex items-center px-2 text-sm relative text-white"
                     style={{ width: `${(track.duration / duration) * 100}%` }}
                   >
                     <span className="truncate">{track.name}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="absolute right-1 top-1 h-6 w-6 p-0"
+                      className="absolute right-1 top-1 h-6 w-6 p-0 text-white hover:bg-blue-600"
                       onClick={() => removeTimelineTrack(track.id)}
                     >
                       <X className="h-3 w-3" />
@@ -983,7 +985,7 @@ const VideoEditing: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-500">
+              <div className="flex items-center justify-center h-full text-gray-400">
                 <Clock className="h-8 w-8 mr-2" />
                 <span>Timeline is empty</span>
               </div>
@@ -1015,13 +1017,14 @@ const VideoEditing: React.FC = () => {
         {/* Modals */}
         {showTemplates && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-6 rounded-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto shadow-xl">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Choose Template</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Choose Template</h3>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowTemplates(false)}
+                  className="text-gray-500 hover:bg-gray-100"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -1030,7 +1033,7 @@ const VideoEditing: React.FC = () => {
                 {availableTemplates.map((template) => (
                   <div
                     key={template.id}
-                    className="bg-gray-700 p-4 rounded cursor-pointer hover:bg-gray-600 transition-colors"
+                    className="bg-gray-50 p-4 rounded cursor-pointer hover:bg-gray-100 transition-colors border border-gray-200"
                     onClick={() => handleTemplateSelect(template.id)}
                   >
                     <img
@@ -1038,7 +1041,7 @@ const VideoEditing: React.FC = () => {
                       alt={template.name}
                       className="w-full h-24 object-cover rounded mb-2"
                     />
-                    <p className="text-sm font-medium">{template.name}</p>
+                    <p className="text-sm font-medium text-gray-900">{template.name}</p>
                   </div>
                 ))}
               </div>
@@ -1048,13 +1051,14 @@ const VideoEditing: React.FC = () => {
 
         {showStickers && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
+            <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4 shadow-xl">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Choose Sticker</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Choose Sticker</h3>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowStickers(false)}
+                  className="text-gray-500 hover:bg-gray-100"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -1064,7 +1068,7 @@ const VideoEditing: React.FC = () => {
                   <Button
                     key={sticker.id}
                     variant="ghost"
-                    className="h-12 w-12 p-0"
+                    className="h-12 w-12 p-0 text-gray-700 hover:bg-gray-100"
                     onClick={() => handleStickerSelect(sticker.id)}
                   >
                     <sticker.icon className="h-6 w-6" />
@@ -1077,13 +1081,14 @@ const VideoEditing: React.FC = () => {
 
         {showEffects && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
+            <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4 shadow-xl">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Choose Effect</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Choose Effect</h3>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowEffects(false)}
+                  className="text-gray-500 hover:bg-gray-100"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -1093,7 +1098,7 @@ const VideoEditing: React.FC = () => {
                   <Button
                     key={effect.id}
                     variant="ghost"
-                    className="h-16 flex flex-col items-center justify-center gap-1"
+                    className="h-16 flex flex-col items-center justify-center gap-1 text-gray-700 hover:bg-gray-100"
                     onClick={() => handleEffectSelect(effect.id)}
                   >
                     <effect.icon className="h-6 w-6" />
@@ -1107,13 +1112,14 @@ const VideoEditing: React.FC = () => {
 
         {showTransitions && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
+            <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4 shadow-xl">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Choose Transition</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Choose Transition</h3>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowTransitions(false)}
+                  className="text-gray-500 hover:bg-gray-100"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -1123,7 +1129,7 @@ const VideoEditing: React.FC = () => {
                   <Button
                     key={transition.id}
                     variant="ghost"
-                    className="h-16 flex flex-col items-center justify-center gap-1"
+                    className="h-16 flex flex-col items-center justify-center gap-1 text-gray-700 hover:bg-gray-100"
                     onClick={() => handleTransitionSelect(transition.id)}
                   >
                     <transition.icon className="h-6 w-6" />
