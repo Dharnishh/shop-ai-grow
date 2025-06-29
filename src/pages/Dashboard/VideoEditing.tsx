@@ -65,6 +65,7 @@ interface DraggableElement {
   startTime: number;
   endTime: number;
   scale: number;
+  visible?: boolean;
 }
 
 interface TimelineElement {
@@ -204,46 +205,71 @@ const VideoEditing: React.FC = () => {
   }, [currentTime]);
 
   // File upload handlers
+  const handleVideoAdd = () => {
+    videoFileRef.current?.click();
+  };
+
   const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
       const videoId = Date.now().toString();
       
-      const newVideoAsset: VideoAsset = {
-        id: videoId,
-        name: file.name,
-        url: url,
-        duration: 0, // Will be updated when video loads
-        position: videoAssets.length,
-        isActive: videoAssets.length === 0
-      };
+      // Create a temporary video element to get duration
+      const tempVideo = document.createElement('video');
+      tempVideo.src = url;
       
-      setVideoAssets(prev => [...prev, newVideoAsset]);
-      
-      if (videoAssets.length === 0) {
-        setVideoPreview(url);
-        setCurrentVideoId(videoId);
-        setEditingMode(true);
-      }
-      
-      // Create timeline track for the video
-      const newTrack: TimelineTrack = {
-        id: videoId,
-        type: 'video',
-        name: file.name,
-        startTime: 0,
-        duration: 0, // Will be updated
-        url: url,
-        color: '#3b82f6'
-      };
-      
-      setTimelineTracks(prev => [...prev, newTrack]);
-      
-      toast({
-        title: "Video Added",
-        description: `${file.name} has been added to your video sequence`,
+      tempVideo.addEventListener('loadedmetadata', () => {
+        const videoDuration = tempVideo.duration || 0;
+        
+        const newVideoAsset: VideoAsset = {
+          id: videoId,
+          name: file.name,
+          url: url,
+          duration: videoDuration,
+          position: videoAssets.length,
+          isActive: videoAssets.length === 0
+        };
+        
+        setVideoAssets(prev => [...prev, newVideoAsset]);
+        
+        if (videoAssets.length === 0) {
+          setVideoPreview(url);
+          setCurrentVideoId(videoId);
+          setEditingMode(true);
+        }
+        
+        // Create timeline track for the video
+        const newTrack: TimelineTrack = {
+          id: videoId,
+          type: 'video',
+          name: file.name,
+          startTime: 0,
+          duration: videoDuration,
+          url: url,
+          color: '#3b82f6'
+        };
+        
+        setTimelineTracks(prev => [...prev, newTrack]);
+        
+        toast({
+          title: "Video Added",
+          description: `${file.name} has been added to your video sequence`,
+        });
       });
+      
+      tempVideo.addEventListener('error', () => {
+        toast({
+          title: "Error Loading Video",
+          description: "Failed to load video duration. Please try again.",
+          variant: "destructive"
+        });
+      });
+    }
+    
+    // Reset the file input
+    if (event.target) {
+      event.target.value = '';
     }
   };
 
@@ -910,7 +936,7 @@ const VideoEditing: React.FC = () => {
               />
               
               <div className="mt-6 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => videoFileRef.current?.click()}>
+                <Button variant="outline" onClick={handleVideoAdd}>
                   <FileVideo className="h-4 w-4 mr-2" />
                   Upload Video
                 </Button>
@@ -953,7 +979,7 @@ const VideoEditing: React.FC = () => {
             <div className="lg:col-span-1 space-y-4">
               <MultiVideoManager
                 videos={videoAssets}
-                onVideoAdd={() => videoFileRef.current?.click()}
+                onVideoAdd={handleVideoAdd}
                 onVideoDelete={handleVideoDelete}
                 onVideoSelect={handleVideoSelect}
                 onVideoReorder={handleVideoReorder}
@@ -1008,7 +1034,7 @@ const VideoEditing: React.FC = () => {
                           </div>
                         ))}
                       </div>
-                      <Button className="w-full mt-4" onClick={() => videoFileRef.current?.click()}>
+                      <Button className="w-full mt-4" onClick={handleVideoAdd}>
                         <Plus className="h-4 w-4 mr-2" />
                         Upload Video
                       </Button>
