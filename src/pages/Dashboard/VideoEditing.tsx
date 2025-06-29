@@ -38,7 +38,6 @@ import {
   Trash2,
   Copy,
   Edit,
-  Save,
   X,
   Smile,
   Heart,
@@ -160,7 +159,6 @@ import {
   Dog,
   Bird,
   Deer,
-  Unicorn,
   Dragon,
   Rocket,
   Airplane,
@@ -168,7 +166,6 @@ import {
   Bus,
   Train,
   Bike,
-  Motorcycle,
   Boat,
   Ship,
   Submarine,
@@ -182,7 +179,6 @@ import {
   Screwdriver,
   Saw,
   Drill,
-  Nail,
   Screw,
   Nut,
   Bolt,
@@ -205,7 +201,6 @@ import {
   Library,
   Quote,
   Feather,
-  Ink,
   Stamp,
   Package,
   Box,
@@ -217,7 +212,6 @@ import {
   Ring,
   Hat,
   Glasses,
-  Sunglasses,
   Pill,
   Syringe,
   Stethoscope,
@@ -341,7 +335,7 @@ const availableTemplates = [
 const availableEffects = [
   { id: 'blur', name: 'Blur', icon: Eye },
   { id: 'sepia', name: 'Sepia', icon: Sun },
-  { id: 'grayscale', name: 'Grayscale', icon: Circle },
+  { id: 'grayscale', name: 'Grayscale', icon: XCircle },
   { id: 'vintage', name: 'Vintage', icon: Clock }
 ];
 
@@ -688,7 +682,7 @@ const VideoEditing: React.FC = () => {
               size="sm"
               className="text-white border-gray-600 hover:bg-gray-700"
             >
-              <Save className="h-4 w-4 mr-2" />
+              <Edit className="h-4 w-4 mr-2" />
               Save
             </Button>
           </div>
