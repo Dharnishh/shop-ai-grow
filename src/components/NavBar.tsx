@@ -85,9 +85,25 @@ const NavBar: React.FC = () => {
         <NavigationMenu>
           <NavigationMenuList>
             <NavigationMenuItem>
-              <Link to="/features" className="text-gray-600 hover:text-accent-purple transition-colors">
+              <NavigationMenuTrigger className="text-gray-600 hover:text-accent-purple">
                 Features
-              </Link>
+              </NavigationMenuTrigger>
+              <NavigationMenuContent>
+                <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-2 bg-white">
+                  <ListItem to="/features" title="Post Scheduling">
+                    Schedule and automate your social media posting
+                  </ListItem>
+                  <ListItem to="/features" title="Analytics Dashboard">
+                    Track your growth and engagement metrics
+                  </ListItem>
+                  <ListItem to="/features" title="Content Calendar">
+                    Plan and organize your content strategy
+                  </ListItem>
+                  <ListItem to="/features" title="Team Collaboration">
+                    Work together with your team members
+                  </ListItem>
+                </ul>
+              </NavigationMenuContent>
             </NavigationMenuItem>
             
             <NavigationMenuItem>
