@@ -39,17 +39,6 @@ const AboutSection: React.FC = () => {
               <p className="text-gray-600 text-sm text-center">Founder & Visionary</p>
             </div>
             
-            <div className="flex flex-col items-center animate-fade-in" style={{animationDelay: '400ms'}}>
-              <div className="w-40 h-40 rounded-full overflow-hidden mb-4 border-4 border-white shadow-lg">
-                <img 
-                  src="/lovable-uploads/rishith.png" 
-                  alt="Developer" 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <h4 className="text-lg font-semibold mb-1">Rishi Kesava</h4>
-              <p className="text-gray-600 text-sm text-center">Frontend & Backend Developer</p>
-            </div>
           </div>
         </div>
       </div>
