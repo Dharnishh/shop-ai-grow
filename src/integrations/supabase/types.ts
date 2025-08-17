@@ -14,7 +14,260 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ai_generations: {
+        Row: {
+          cost: number | null
+          created_at: string
+          id: string
+          model_used: string | null
+          prompt: string
+          result: string | null
+          tokens_used: number | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          id?: string
+          model_used?: string | null
+          prompt: string
+          result?: string | null
+          tokens_used?: number | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          id?: string
+          model_used?: string | null
+          prompt?: string
+          result?: string | null
+          tokens_used?: number | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      content_templates: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean | null
+          name: string
+          tags: string[] | null
+          updated_at: string
+          usage_count: number | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          name: string
+          tags?: string[] | null
+          updated_at?: string
+          usage_count?: number | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          name?: string
+          tags?: string[] | null
+          updated_at?: string
+          usage_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      post_analytics: {
+        Row: {
+          comments: number | null
+          engagement_rate: number | null
+          id: string
+          last_updated: string
+          likes: number | null
+          platform: string
+          platform_post_id: string | null
+          post_id: string
+          shares: number | null
+          views: number | null
+        }
+        Insert: {
+          comments?: number | null
+          engagement_rate?: number | null
+          id?: string
+          last_updated?: string
+          likes?: number | null
+          platform: string
+          platform_post_id?: string | null
+          post_id: string
+          shares?: number | null
+          views?: number | null
+        }
+        Update: {
+          comments?: number | null
+          engagement_rate?: number | null
+          id?: string
+          last_updated?: string
+          likes?: number | null
+          platform?: string
+          platform_post_id?: string | null
+          post_id?: string
+          shares?: number | null
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_analytics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          ai_generated: boolean | null
+          ai_prompt: string | null
+          content: string
+          created_at: string
+          id: string
+          media_urls: string[] | null
+          platforms: string[]
+          published_at: string | null
+          scheduled_at: string | null
+          status: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          ai_prompt?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          media_urls?: string[] | null
+          platforms: string[]
+          published_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_generated?: boolean | null
+          ai_prompt?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          media_urls?: string[] | null
+          platforms?: string[]
+          published_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          business_name: string | null
+          business_type: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          business_name?: string | null
+          business_type?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          business_name?: string | null
+          business_type?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      social_accounts: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          platform: string
+          platform_user_id: string
+          refresh_token: string | null
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          platform: string
+          platform_user_id: string
+          refresh_token?: string | null
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          platform?: string
+          platform_user_id?: string
+          refresh_token?: string | null
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
