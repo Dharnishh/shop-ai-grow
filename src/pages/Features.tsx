@@ -64,12 +64,6 @@ const Features: React.FC = () => {
       bgColor: "bg-blue-100"
     },
     {
-      title: "Competitor Analysis",
-      description: "Analyze your competitors' strategies and performance to stay ahead in your market.",
-      icon: <BarChart className="text-red-600" size={24} />,
-      bgColor: "bg-red-100"
-    },
-    {
       title: "AI Video Editor",
       description: "Edit videos easily with our AI-powered tools. Add effects, transitions, and more with ease.",
       icon: <Video className="text-indigo-600" size={24} />,

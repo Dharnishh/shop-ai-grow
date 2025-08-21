@@ -33,7 +33,7 @@ const NavBar: React.FC = () => {
     { label: "AI Tools", href: "/dashboard/ai-tools" },
     { label: "Photo Editing", href: "/dashboard/photo-editing" },
     { label: "Video Editing", href: "/dashboard/video-editing" },
-    { label: "Competitor Analysis", href: "/dashboard/competitor-analysis" },
+    
     { label: "Manage Accounts", href: "/dashboard/manage-accounts" }
   ];
 
@@ -114,9 +114,6 @@ const NavBar: React.FC = () => {
                   <ListItem to="/ai-tools" title="AI Content Tools">
                     Generate captions, find hashtags, and create engaging content
                   </ListItem>
-                  <ListItem to="/competitor-analysis" title="Competitor Analysis">
-                    Track and analyze your competitors' performance
-                  </ListItem>
                   <ListItem to="/features" title="Post Scheduling">
                     Schedule and automate your social media posting
                   </ListItem>
@@ -188,9 +185,6 @@ const NavBar: React.FC = () => {
           </Link>
           <Link to="/ai-tools" className="text-gray-600 hover:text-accent-purple transition-colors" onClick={toggleMenu}>
             AI Tools
-          </Link>
-          <Link to="/competitor-analysis" className="text-gray-600 hover:text-accent-purple transition-colors" onClick={toggleMenu}>
-            Competitor Analysis
           </Link>
           <Link to="/about" className="text-gray-600 hover:text-accent-purple transition-colors" onClick={toggleMenu}>
             About Us

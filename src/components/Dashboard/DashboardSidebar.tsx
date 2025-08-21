@@ -6,7 +6,6 @@ import {
   Image,
   Video,
   MessageCircle,
-  BarChart,
   Home,
   Facebook,
   Instagram,
@@ -39,11 +38,6 @@ const menuItems = [
     title: "Video Editing",
     icon: <Video size={20} />,
     path: "/dashboard/video-editing",
-  },
-  {
-    title: "Competitor Analysis",
-    icon: <BarChart size={20} />,
-    path: "/dashboard/competitor-analysis",
   },
 ];
 

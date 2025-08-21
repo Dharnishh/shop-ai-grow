@@ -44,13 +44,6 @@ const features: Feature[] = [
     color: "bg-orange-100 text-orange-600",
     delay: 400
   },
-  {
-    title: "Competitor Analysis",
-    description: "Analyze your competitors and learn from their strategies.",
-    icon: <BarChart size={32} />,
-    color: "bg-red-100 text-red-600",
-    delay: 500
-  }
 ];
 
 const FeatureSection: React.FC = () => {

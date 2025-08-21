@@ -13,7 +13,7 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Contact from "./pages/Contact";
 import AITools from "./pages/AITools";
-import CompetitorAnalysis from "./pages/CompetitorAnalysis";
+
 import NotFound from "./pages/NotFound";
 
 // Import dashboard module pages
@@ -40,7 +40,7 @@ const App = () => (
           <Route path="/dashboard/ai-tools" element={<DashboardAITools />} />
           <Route path="/dashboard/photo-editing" element={<PhotoEditing />} />
           <Route path="/dashboard/video-editing" element={<VideoEditing />} />
-          <Route path="/dashboard/competitor-analysis" element={<CompetitorAnalysis />} />
+          
           <Route path="/dashboard/manage-accounts" element={<ManageAccounts />} />
           <Route path="/features" element={<Features />} />
           <Route path="/about" element={<About />} />
@@ -48,7 +48,7 @@ const App = () => (
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/ai-tools" element={<AITools />} />
-          <Route path="/competitor-analysis" element={<CompetitorAnalysis />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

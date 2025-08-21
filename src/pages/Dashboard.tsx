@@ -61,14 +61,6 @@ const Dashboard: React.FC = () => {
       href: "/dashboard/video-editing",
       delay: 400
     },
-    {
-      title: "Competitor Analysis",
-      icon: <BarChart size={24} />,
-      color: "bg-red-100 text-red-600",
-      description: "Analyze your competitors' strategies.",
-      href: "/dashboard/competitor-analysis",
-      delay: 500
-    }
   ];
 
   return (
